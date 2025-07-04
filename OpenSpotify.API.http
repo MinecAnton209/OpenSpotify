@@ -1,0 +1,6 @@
+@OpenSpotify.API_HostAddress = http://localhost:5055
+
+GET {{OpenSpotify.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
