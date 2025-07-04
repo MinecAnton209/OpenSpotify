@@ -1,5 +1,4 @@
-﻿// src/app/register/page.tsx
-"use client";
+﻿"use client";
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -37,7 +36,6 @@ export default function RegisterPage() {
                 throw new Error(errorMessage);
             }
 
-            // Успішна реєстрація, перенаправляємо на сторінку входу
             router.push('/login');
 
         } catch (err: any) {

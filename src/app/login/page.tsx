@@ -1,5 +1,4 @@
-﻿// src/app/login/page.tsx
-"use client";
+﻿"use client";
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -36,8 +35,7 @@ export default function LoginPage() {
 
             if (data.token) {
                 localStorage.setItem('authToken', data.token);
-                // Перенаправлення на головну сторінку
-                router.push('/');
+                window.location.href = '/';
             } else {
                 throw new Error('Login failed: No token received from server.');
             }
