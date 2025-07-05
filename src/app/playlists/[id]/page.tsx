@@ -4,12 +4,15 @@ import { useEffect, useState } from 'react';
 import apiClient from '@/lib/apiClient';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { usePlayerStore } from '@/stores/playerStore';
 import { TrashIcon, ClockIcon, HashtagIcon, MusicalNoteIcon } from '@heroicons/react/24/outline';
 
 interface Track {
     id: string;
     title: string;
     durationInSeconds: number;
+    artistName: string;
+    albumCoverImageUrl: string | null;
 }
 
 interface PlaylistDetails {
@@ -33,6 +36,8 @@ export default function PlaylistDetailPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const setTrack = usePlayerStore((state) => state.setTrack);
+
     useEffect(() => {
         if (!id) return;
 
@@ -54,39 +59,29 @@ export default function PlaylistDetailPage() {
 
     const handleRemoveTrack = async (trackId: string) => {
         if (!playlist) return;
-
         if (!confirm(`Are you sure you want to remove this track from "${playlist.name}"?`)) {
             return;
         }
-
         try {
             await apiClient.delete(`/api/playlists/${playlist.id}/tracks/${trackId}`);
-
-            setPlaylist(prevPlaylist => {
-                if (!prevPlaylist) return null;
-                return {
-                    ...prevPlaylist,
-                    tracks: prevPlaylist.tracks.filter(track => track.id !== trackId),
-                };
-            });
-
+            setPlaylist(prev => prev ? { ...prev, tracks: prev.tracks.filter(t => t.id !== trackId) } : null);
         } catch (err) {
-            console.error("Failed to remove track", err);
-            alert("Error: Could not remove the track. Please try again.");
+            alert("Error: Could not remove the track.");
         }
     };
 
-    if (isLoading) {
-        return <div className="text-center mt-10">Loading playlist...</div>;
-    }
+    const handleTrackClick = (track: Track) => {
+        setTrack({
+            id: track.id,
+            title: track.title,
+            artistName: track.artistName,
+            coverImageUrl: track.albumCoverImageUrl,
+        });
+    };
 
-    if (error) {
-        return <div className="text-center mt-10 text-red-500">{error}</div>;
-    }
-
-    if (!playlist) {
-        return <div className="text-center mt-10">Playlist not found.</div>;
-    }
+    if (isLoading) return <div className="text-center mt-10">Loading playlist...</div>;
+    if (error) return <div className="text-center mt-10 text-red-500">{error}</div>;
+    if (!playlist) return <div className="text-center mt-10">Playlist not found.</div>;
 
     return (
         <div>
@@ -104,25 +99,25 @@ export default function PlaylistDetailPage() {
             <div className="mt-6">
                 {playlist.tracks.length > 0 ? (
                     <div>
-                        <div className="grid grid-cols-[auto,1fr,auto] gap-4 text-gray-400 p-2 border-b border-gray-700 mb-2">
+                        <div className="grid grid-cols-[auto,1fr,auto,auto] gap-4 text-gray-400 p-2 border-b border-gray-700 mb-2">
                             <HashtagIcon className="w-5 h-5 ml-2" />
                             <div>Title</div>
-                            <ClockIcon className="w-5 h-5" />
+                            <div/>
+                            <ClockIcon className="w-5 h-5 mr-2" />
                         </div>
                         <ul>
                             {playlist.tracks.map((track, index) => (
                                 <li key={track.id} className="grid grid-cols-[auto,1fr,auto,auto] gap-4 p-2 rounded-md hover:bg-gray-800 items-center group">
-                                    <span className="text-gray-400 w-8 text-center">{index + 1}</span>
-                                    <div>
+                                    <div className="w-8 text-center text-gray-400 cursor-pointer" onClick={() => handleTrackClick(track)}>
+                                        {index + 1}
+                                    </div>
+                                    <div className="cursor-pointer" onClick={() => handleTrackClick(track)}>
                                         <p className="font-semibold text-white">{track.title}</p>
+                                        <p className="text-sm text-gray-400">{track.artistName}</p>
                                     </div>
                                     <span className="text-gray-400">{formatDuration(track.durationInSeconds)}</span>
                                     <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button
-                                            onClick={() => handleRemoveTrack(track.id)}
-                                            className="p-1 text-gray-400 hover:text-red-500"
-                                            title="Remove from playlist"
-                                        >
+                                        <button onClick={() => handleRemoveTrack(track.id)} className="p-1 text-gray-400 hover:text-red-500" title="Remove from playlist">
                                             <TrashIcon className="w-5 h-5" />
                                         </button>
                                     </div>

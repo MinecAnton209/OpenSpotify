@@ -88,10 +88,10 @@ const Sidebar = () => {
                         <HomeIcon className="w-6 h-6" />
                         <span>Home</span>
                     </Link>
-                    <div className="flex items-center gap-3 text-white font-bold text-md hover:text-gray-300 cursor-pointer">
+                    <Link href="/search" className="flex items-center gap-3 text-white font-bold text-md hover:text-gray-300 cursor-pointer">
                         <MagnifyingGlassIcon className="w-6 h-6" />
                         <span>Search</span>
-                    </div>
+                    </Link>
                 </div>
 
                 <div className="bg-gray-900 rounded-lg mt-2 flex-1 p-2 flex flex-col">
