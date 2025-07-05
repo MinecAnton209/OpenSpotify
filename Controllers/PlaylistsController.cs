@@ -140,5 +140,32 @@ namespace OpenSpotify.API.Controllers
     
             return StatusCode(201, new { message = "Track added successfully."});
         }
+        [HttpDelete("{playlistId}/tracks/{trackId}")]
+        public async Task<IActionResult> RemoveTrackFromPlaylist(Guid playlistId, Guid trackId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Unauthorized();
+
+            var playlistBelongsToUser = await _context.Playlists
+                .AnyAsync(p => p.Id == playlistId && p.UserId == userId);
+    
+            if (!playlistBelongsToUser)
+            {
+                return NotFound(new { message = "Playlist not found or you don't have access." });
+            }
+
+            var playlistTrack = await _context.PlaylistTracks
+                .FirstOrDefaultAsync(pt => pt.PlaylistId == playlistId && pt.TrackId == trackId);
+
+            if (playlistTrack == null)
+            {
+                return NotFound(new { message = "Track not found in this playlist." });
+            }
+
+            _context.PlaylistTracks.Remove(playlistTrack);
+            await _context.SaveChangesAsync();
+    
+            return NoContent();
+        }
     }
 }
