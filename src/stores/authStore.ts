@@ -2,17 +2,17 @@
 import { jwtDecode } from 'jwt-decode';
 
 interface DecodedToken {
-    email: string;
-    sub: string;
-    role: string | string[];
-    name: string;
+    'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress': string;
+    'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier': string;
+    'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name': string;
+    'http://schemas.microsoft.com/ws/2008/06/identity/claims/role': string | string[];
 }
 
 interface User {
     email: string;
     id: string;
-    role: string | string[];
     username: string;
+    role: string | string[];
 }
 
 interface AuthState {
@@ -36,16 +36,16 @@ export const useAuthStore = create<AuthState>((set) => ({
                 localStorage.setItem('authToken', token);
 
                 const user: User = {
-                    email: decodedPayload.email,
-                    id: decodedPayload.sub,
-                    role: decodedPayload.role,
-                    username: decodedPayload.name
+                    email: decodedPayload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'],
+                    id: decodedPayload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'],
+                    username: decodedPayload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'],
+                    role: decodedPayload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'],
                 };
 
                 set({ token, user, isAuthenticated: true });
 
             } catch (error) {
-                console.error("Failed to decode token or token is invalid:", error);
+                console.error("Failed to decode token:", error);
                 localStorage.removeItem('authToken');
                 set({ token: null, user: null, isAuthenticated: false });
             }

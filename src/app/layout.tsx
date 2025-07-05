@@ -1,12 +1,10 @@
-// src/app/layout.tsx
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import type {Metadata} from "next";
+import {Inter} from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/Sidebar";
-import Player from "@/components/Player";
-import AuthInitializer from "@/components/AuthInitializer"; // <-- Імпорт
+import AuthInitializer from "@/components/AuthInitializer";
+import ClientLayout from "@/components/ClientLayout";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({subsets: ["latin"]});
 
 export const metadata: Metadata = {
     title: "OpenSpotify",
@@ -21,16 +19,10 @@ export default function RootLayout({
     return (
         <html lang="en">
         <body className={inter.className}>
-        <AuthInitializer />
-        <div className="flex h-screen flex-col">
-            <div className="flex flex-1 overflow-hidden">
-                <Sidebar />
-                <main className="flex-1 overflow-y-auto p-8">
-                    {children}
-                </main>
-            </div>
-            <Player />
-        </div>
+        <AuthInitializer/>
+        <ClientLayout>
+            {children}
+        </ClientLayout>
         </body>
         </html>
     );
