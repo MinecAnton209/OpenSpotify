@@ -60,17 +60,26 @@ export default function HomePage() {
         <div>
             <h1 className="text-3xl font-bold mb-6">Hello, {user?.username}!</h1>
             <h2 className="text-2xl font-bold mb-4">Featured Artists</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
                 {artists.map((artist) => (
-                    <div key={artist.id} className="bg-gray-800 p-4 rounded-lg shadow-lg hover:bg-gray-700 transition-colors cursor-pointer">
-                        <img
-                            src={artist.profileImageUrl || 'https://via.placeholder.co/150'}
-                            alt={artist.name}
-                            className="w-full h-32 object-cover rounded-full mb-4"
-                        />
-                        <h3 className="text-lg font-bold truncate">{artist.name}</h3>
-                        {artist.isVerified && <span className="text-blue-400 text-xs">Verified</span>}
-                    </div>
+                    <Link href={`/artists/${artist.id}`} key={artist.id}>
+                        <div className="bg-gray-800 p-4 rounded-lg shadow-lg hover:bg-gray-700 transition-colors cursor-pointer h-full flex flex-col items-center text-center">
+                            <img
+                                src={artist.profileImageUrl || 'https://placehold.co/150'}
+                                alt={artist.name}
+                                className="w-32 h-32 object-cover rounded-full mb-4 shadow-md"
+                            />
+                            <div className="flex flex-col justify-center">
+                                <h3 className="text-lg font-bold truncate w-full">{artist.name}</h3>
+                                {artist.isVerified && (
+                                    <div className="flex items-center justify-center mt-1">
+                                        <span className="text-blue-400 text-xs">Verified Artist</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </Link>
                 ))}
             </div>
         </div>
