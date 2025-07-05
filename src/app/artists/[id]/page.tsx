@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import apiClient from '@/lib/apiClient';
 import { useParams } from 'next/navigation';
+import Link from "next/link";
 
 interface Album {
     id: number;
@@ -77,14 +78,17 @@ export default function ArtistDetailPage() {
                 <h2 className="text-2xl font-bold mb-4">Albums</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
                     {artist.albums.map((album) => (
-                        <div key={album.id} className="bg-gray-800 p-4 rounded-lg shadow-lg hover:bg-gray-700 transition-colors cursor-pointer">
-                            <img
-                                src={album.coverImageUrl || 'https://placehold.co/150'}
-                                alt={album.title}
-                                className="w-full h-auto object-cover rounded-md mb-4"
-                            />
-                            <h3 className="font-bold truncate">{album.title}</h3>
-                        </div>
+                        // --- Зміни починаються тут ---
+                        <Link href={`/albums/${album.id}`} key={album.id}>
+                            <div className="bg-gray-800 p-4 rounded-lg shadow-lg hover:bg-gray-700 transition-colors cursor-pointer h-full">
+                                <img
+                                    src={album.coverImageUrl || 'https://placehold.co/150'}
+                                    alt={album.title}
+                                    className="w-full h-auto object-cover rounded-md mb-4 aspect-square"
+                                />
+                                <h3 className="font-bold truncate">{album.title}</h3>
+                            </div>
+                        </Link>
                     ))}
                 </div>
             </div>
