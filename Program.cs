@@ -6,6 +6,9 @@ using Microsoft.IdentityModel.Tokens;
 using OpenSpotify.API.Data;
 using OpenSpotify.API.Entities;
 using OpenSpotify.API.Services;
+using System.IdentityModel.Tokens.Jwt;
+
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 var builder = WebApplication.CreateBuilder(args);
 
