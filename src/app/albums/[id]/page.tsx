@@ -5,6 +5,7 @@ import apiClient from '@/lib/apiClient';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ClockIcon, HashtagIcon } from '@heroicons/react/24/outline';
+import TrackContextMenu from '@/components/TrackContextMenu';
 
 interface Track {
     id: number;
@@ -94,10 +95,13 @@ export default function AlbumDetailPage() {
                 </div>
                 <ul>
                     {album.tracks.map((track, index) => (
-                        <li key={track.id} className="grid grid-cols-[auto,1fr,auto] gap-4 p-2 rounded-md hover:bg-gray-800 items-center">
+                        <li key={track.id} className="grid grid-cols-[auto,1fr,auto,auto] gap-4 p-2 rounded-md hover:bg-gray-800 items-center group">
                             <span className="text-gray-400">{index + 1}</span>
                             <p className="font-semibold">{track.title}</p>
                             <span className="text-gray-400">{formatDuration(track.durationInSeconds)}</span>
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                <TrackContextMenu trackId={track.id} />
+                            </div>
                         </li>
                     ))}
                 </ul>

@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useAuthStore } from '@/stores/authStore';
+import { useSidebarStore } from '@/stores/sidebarStore';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, Fragment } from 'react';
@@ -9,7 +10,7 @@ import { HomeIcon, MagnifyingGlassIcon, BuildingLibraryIcon, PlusCircleIcon } fr
 import Modal from './Modal';
 
 interface Playlist {
-    id: number;
+    id: string;
     name: string;
 }
 
@@ -17,14 +18,14 @@ const Sidebar = () => {
     const { isAuthenticated, user, logout } = useAuthStore();
     const router = useRouter();
 
-    const [playlists, setPlaylists] = useState<Playlist[]>([]);
+    const { playlists, setPlaylists } = useSidebarStore();
+
     const [isLoadingPlaylists, setIsLoadingPlaylists] = useState(true);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newPlaylistName, setNewPlaylistName] = useState('');
     const [isCreating, setIsCreating] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -44,7 +45,7 @@ const Sidebar = () => {
             setPlaylists([]);
             setIsLoadingPlaylists(false);
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, setPlaylists]);
 
     const handleLogout = () => {
         logout();
@@ -69,11 +70,8 @@ const Sidebar = () => {
 
         try {
             const newPlaylist = await apiClient.post<Playlist>('/api/playlists', { name: newPlaylistName });
-
-            setPlaylists(prevPlaylists => [...prevPlaylists, newPlaylist]);
-
+            setPlaylists([...playlists, newPlaylist]);
             setIsModalOpen(false);
-
         } catch (err) {
             setError("Failed to create playlist. Please try again.");
             console.error(err);
