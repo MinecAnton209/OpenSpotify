@@ -100,5 +100,45 @@ namespace OpenSpotify.API.Controllers
 
             return CreatedAtAction(nameof(GetPlaylist), new { id = playlist.Id }, playlistDto);
         }
+        [HttpPost("{playlistId}/tracks")]
+        public async Task<IActionResult> AddTrackToPlaylist(Guid playlistId, AddTrackToPlaylistDto dto)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Unauthorized();
+
+            var playlist = await _context.Playlists
+                .FirstOrDefaultAsync(p => p.Id == playlistId && p.UserId == userId);
+
+            if (playlist == null)
+            {
+                return NotFound(new { message = "Playlist not found or you don't have access." });
+            }
+
+            var trackExists = await _context.Tracks.AnyAsync(t => t.Id == dto.TrackId);
+            if (!trackExists)
+            {
+                return NotFound(new { message = "Track not found." });
+            }
+
+            var trackAlreadyInPlaylist = await _context.PlaylistTracks
+                .AnyAsync(pt => pt.PlaylistId == playlistId && pt.TrackId == dto.TrackId);
+
+            if (trackAlreadyInPlaylist)
+            {
+                return Conflict(new { message = "Track is already in this playlist." });
+            }
+
+            var playlistTrack = new PlaylistTrack
+            {
+                PlaylistId = playlistId,
+                TrackId = dto.TrackId,
+                AddedAt = DateTime.UtcNow
+            };
+
+            await _context.PlaylistTracks.AddAsync(playlistTrack);
+            await _context.SaveChangesAsync();
+    
+            return StatusCode(201, new { message = "Track added successfully."});
+        }
     }
 }
