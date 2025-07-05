@@ -17,7 +17,7 @@ namespace OpenSpotify.API.Controllers
         {
             _context = context;
         }
-        
+
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ArtistDto>>> GetArtists()
         {
@@ -32,6 +32,36 @@ namespace OpenSpotify.API.Controllers
                 .ToListAsync();
 
             return Ok(artists);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<ArtistDetailDto>> GetArtist(int id)
+        {
+            var artist = await _context.Artists
+                .Include(a => a.Albums) 
+                .Where(a => a.Id == id) 
+                .Select(a => new ArtistDetailDto
+                {
+                    Id = a.Id,
+                    Name = a.Name,
+                    Bio = a.Bio,
+                    ProfileImageUrl = a.ProfileImageUrl,
+                    IsVerified = a.IsVerified,
+                    Albums = a.Albums.Select(album => new AlbumDto
+                    {
+                        Id = album.Id,
+                        Title = album.Title,
+                        CoverImageUrl = album.CoverImageUrl
+                    }).ToList()
+                })
+                .FirstOrDefaultAsync(); 
+
+            if (artist == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(artist);
         }
     }
 }
