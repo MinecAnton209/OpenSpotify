@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import apiClient from '@/lib/apiClient';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { TrashIcon, ClockIcon, HashtagIcon, MusicalNoteIcon } from '@heroicons/react/24/outline';
 
 interface Track {
     id: string;
@@ -42,6 +43,7 @@ export default function PlaylistDetailPage() {
                 setPlaylist(data);
             } catch (err) {
                 setError('Failed to fetch playlist details.');
+                console.error(err);
             } finally {
                 setIsLoading(false);
             }
@@ -50,33 +52,84 @@ export default function PlaylistDetailPage() {
         fetchPlaylistDetails();
     }, [id]);
 
-    if (isLoading) return <div className="text-center mt-10">Loading playlist...</div>;
-    if (error) return <div className="text-center mt-10 text-red-500">{error}</div>;
-    if (!playlist) return <div className="text-center mt-10">Playlist not found.</div>;
+    const handleRemoveTrack = async (trackId: string) => {
+        if (!playlist) return;
+
+        if (!confirm(`Are you sure you want to remove this track from "${playlist.name}"?`)) {
+            return;
+        }
+
+        try {
+            await apiClient.delete(`/api/playlists/${playlist.id}/tracks/${trackId}`);
+
+            setPlaylist(prevPlaylist => {
+                if (!prevPlaylist) return null;
+                return {
+                    ...prevPlaylist,
+                    tracks: prevPlaylist.tracks.filter(track => track.id !== trackId),
+                };
+            });
+
+        } catch (err) {
+            console.error("Failed to remove track", err);
+            alert("Error: Could not remove the track. Please try again.");
+        }
+    };
+
+    if (isLoading) {
+        return <div className="text-center mt-10">Loading playlist...</div>;
+    }
+
+    if (error) {
+        return <div className="text-center mt-10 text-red-500">{error}</div>;
+    }
+
+    if (!playlist) {
+        return <div className="text-center mt-10">Playlist not found.</div>;
+    }
 
     return (
         <div>
             <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6 mb-8">
-                <div className="w-48 h-48 bg-gray-800 flex items-center justify-center rounded-md shadow-lg">
+                <div className="w-48 h-48 bg-gradient-to-br from-green-600 to-gray-800 flex items-center justify-center rounded-md shadow-lg">
+                    <MusicalNoteIcon className="w-24 h-24 text-white opacity-75" />
                 </div>
                 <div className="text-center sm:text-left">
                     <p className="text-sm font-bold">Playlist</p>
-                    <h1 className="text-5xl md:text-7xl font-bold">{playlist.name}</h1>
-                    <p className="mt-4 font-semibold">{playlist.ownerName}</p>
+                    <h1 className="text-5xl md:text-7xl font-bold break-words">{playlist.name}</h1>
+                    <p className="mt-4 font-semibold text-gray-300">{playlist.ownerName}</p>
                 </div>
             </div>
 
-            <div>
+            <div className="mt-6">
                 {playlist.tracks.length > 0 ? (
-                    <ul>
-                        {playlist.tracks.map((track, index) => (
-                            <li key={track.id} className="grid grid-cols-[auto,1fr,auto] gap-4 p-2 rounded-md hover:bg-gray-800 items-center">
-                                <span className="text-gray-400">{index + 1}</span>
-                                <p className="font-semibold">{track.title}</p>
-                                <span className="text-gray-400">{formatDuration(track.durationInSeconds)}</span>
-                            </li>
-                        ))}
-                    </ul>
+                    <div>
+                        <div className="grid grid-cols-[auto,1fr,auto] gap-4 text-gray-400 p-2 border-b border-gray-700 mb-2">
+                            <HashtagIcon className="w-5 h-5 ml-2" />
+                            <div>Title</div>
+                            <ClockIcon className="w-5 h-5" />
+                        </div>
+                        <ul>
+                            {playlist.tracks.map((track, index) => (
+                                <li key={track.id} className="grid grid-cols-[auto,1fr,auto,auto] gap-4 p-2 rounded-md hover:bg-gray-800 items-center group">
+                                    <span className="text-gray-400 w-8 text-center">{index + 1}</span>
+                                    <div>
+                                        <p className="font-semibold text-white">{track.title}</p>
+                                    </div>
+                                    <span className="text-gray-400">{formatDuration(track.durationInSeconds)}</span>
+                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button
+                                            onClick={() => handleRemoveTrack(track.id)}
+                                            className="p-1 text-gray-400 hover:text-red-500"
+                                            title="Remove from playlist"
+                                        >
+                                            <TrashIcon className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
                 ) : (
                     <p className="text-gray-400 mt-6">This playlist is empty. Let's add some songs!</p>
                 )}

@@ -9,7 +9,9 @@ const apiClient = {
     post: async <T>(endpoint: string, body: any): Promise<T> => {
         return request<T>(endpoint, 'POST', body);
     },
-
+    delete: async (endpoint: string): Promise<void> => {
+        return request<void>(endpoint, 'DELETE');
+    },
 };
 
 async function request<T>(endpoint: string, method: string, body?: any): Promise<T> {
@@ -31,6 +33,10 @@ async function request<T>(endpoint: string, method: string, body?: any): Promise
 
     try {
         const response = await fetch(`${API_URL}${endpoint}`, config);
+
+        if (response.status === 204) {
+            return Promise.resolve(undefined as T);
+        }
 
         if (!response.ok) {
             if (response.status === 401) {
