@@ -63,7 +63,9 @@ namespace OpenSpotify.API.Controllers
                     {
                         Id = pt.Track.Id,
                         Title = pt.Track.Title,
-                        DurationInSeconds = pt.Track.DurationInSeconds
+                        DurationInSeconds = pt.Track.DurationInSeconds,
+                        ArtistName = pt.Track.Album.Artist.Name,
+                        AlbumCoverImageUrl = pt.Track.Album.CoverImageUrl
                     }).ToList()
                 })
                 .FirstOrDefaultAsync();
