@@ -19,7 +19,7 @@ namespace OpenSpotify.API.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<AlbumDetailDto>> GetAlbum(int id)
+        public async Task<ActionResult<AlbumDetailDto>> GetAlbum(Guid id)
         {
             var album = await _context.Albums
                 .Include(a => a.Tracks)

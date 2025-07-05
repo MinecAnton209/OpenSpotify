@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿// Controllers/ArtistsController.cs
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenSpotify.API.Data;
@@ -35,11 +36,11 @@ namespace OpenSpotify.API.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<ArtistDetailDto>> GetArtist(int id)
+        public async Task<ActionResult<ArtistDetailDto>> GetArtist(Guid id)
         {
             var artist = await _context.Artists
                 .Include(a => a.Albums) 
-                .Where(a => a.Id == id) 
+                .Where(a => a.Id == id)
                 .Select(a => new ArtistDetailDto
                 {
                     Id = a.Id,

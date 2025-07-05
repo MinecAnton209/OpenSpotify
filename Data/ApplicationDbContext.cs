@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿// Data/ApplicationDbContext.cs
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using OpenSpotify.API.Entities;
 
@@ -19,6 +20,24 @@ namespace OpenSpotify.API.Data
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
+            builder.Entity<Artist>()
+                .HasMany(artist => artist.Albums)
+                .WithOne(album => album.Artist)
+                .HasForeignKey(album => album.ArtistId)
+                .IsRequired();
+
+            builder.Entity<Album>()
+                .HasMany(album => album.Tracks)
+                .WithOne(track => track.Album)
+                .HasForeignKey(track => track.AlbumId)
+                .IsRequired();        
+
+            builder.Entity<ApplicationUser>()
+                .HasMany<Playlist>()
+                .WithOne(playlist => playlist.User)
+                .HasForeignKey(playlist => playlist.UserId)
+                .IsRequired();
 
             builder.Entity<PlaylistTrack>()
                 .HasKey(pt => new { pt.PlaylistId, pt.TrackId });

@@ -42,6 +42,40 @@ namespace OpenSpotify.API.Controllers
             return Ok(playlists);
         }
 
+        [HttpGet("{id}")]
+        public async Task<ActionResult<PlaylistDetailDto>> GetPlaylist(Guid id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var playlist = await _context.Playlists
+                .Where(p => p.Id == id)
+                .Include(p => p.User)
+                .Include(p => p.PlaylistTracks)
+                    .ThenInclude(pt => pt.Track)
+                        .ThenInclude(t => t.Album)
+                            .ThenInclude(al => al.Artist)
+                .Select(p => new PlaylistDetailDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    OwnerName = p.User.UserName,
+                    Tracks = p.PlaylistTracks.Select(pt => new TrackDto 
+                    {
+                        Id = pt.Track.Id,
+                        Title = pt.Track.Title,
+                        DurationInSeconds = pt.Track.DurationInSeconds
+                    }).ToList()
+                })
+                .FirstOrDefaultAsync();
+
+            if (playlist == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(playlist);
+        }
+
         [HttpPost]
         public async Task<ActionResult<PlaylistDto>> CreatePlaylist(CreatePlaylistDto createPlaylistDto)
         {
@@ -50,11 +84,12 @@ namespace OpenSpotify.API.Controllers
 
             var playlist = new Playlist
             {
+                Id = Guid.NewGuid(),
                 Name = createPlaylistDto.Name,
                 UserId = userId
             };
 
-            _context.Playlists.Add(playlist);
+            await _context.Playlists.AddAsync(playlist);
             await _context.SaveChangesAsync();
 
             var playlistDto = new PlaylistDto
@@ -63,7 +98,7 @@ namespace OpenSpotify.API.Controllers
                 Name = playlist.Name
             };
 
-            return CreatedAtAction(nameof(GetUserPlaylists), new { id = playlist.Id }, playlistDto);
+            return CreatedAtAction(nameof(GetPlaylist), new { id = playlist.Id }, playlistDto);
         }
     }
 }
