@@ -6,7 +6,7 @@ import apiClient from '@/lib/apiClient';
 import Link from 'next/link';
 
 interface Artist {
-    id: number;
+    id: string;
     name: string;
     profileImageUrl: string | null;
     isVerified: boolean;
@@ -27,6 +27,7 @@ export default function HomePage() {
         const fetchArtists = async () => {
             try {
                 const data = await apiClient.get<Artist[]>('/api/artists');
+                console.log("Artists from API:", data);
                 setArtists(data);
             } catch (err) {
                 setError('Failed to fetch artists.');
