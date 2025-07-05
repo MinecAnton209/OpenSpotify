@@ -6,6 +6,9 @@ const apiClient = {
     get: async <T>(endpoint: string): Promise<T> => {
         return request<T>(endpoint, 'GET');
     },
+    post: async <T>(endpoint: string, body: any): Promise<T> => {
+        return request<T>(endpoint, 'POST', body);
+    },
 
 };
 
