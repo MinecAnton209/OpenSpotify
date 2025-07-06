@@ -32,7 +32,7 @@ namespace OpenSpotify.API.Controllers
 
             var alreadyLiked = await _context.LikedTracks
                 .AnyAsync(lt => lt.UserId == userId && lt.TrackId == trackId);
-            
+
             if (alreadyLiked)
             {
                 return Ok(new { message = "Track is already liked." });
@@ -69,17 +69,27 @@ namespace OpenSpotify.API.Controllers
 
             return NoContent();
         }
-        
+
         [HttpGet("liked-tracks")]
         public async Task<ActionResult<IEnumerable<TrackDto>>> GetLikedTracks()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            var likedTracks = await _context.LikedTracks
+            var likedTrackIds = await _context.LikedTracks
                 .Where(lt => lt.UserId == userId)
                 .OrderByDescending(lt => lt.LikedAt)
-                .Select(lt => lt.Track)
-                .Include(t => t.Album).ThenInclude(al => al.Artist)
+                .Select(lt => lt.TrackId)
+                .ToListAsync();
+
+            if (!likedTrackIds.Any())
+            {
+                return Ok(new List<TrackDto>());
+            }
+
+            var tracks = await _context.Tracks
+                .Where(t => likedTrackIds.Contains(t.Id))
+                .Include(t => t.Album)
+                .ThenInclude(al => al.Artist)
                 .Select(t => new TrackDto
                 {
                     Id = t.Id,
@@ -90,8 +100,13 @@ namespace OpenSpotify.API.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(likedTracks);
+            var sortedTracks = tracks
+                .OrderBy(t => likedTrackIds.IndexOf(t.Id))
+                .ToList();
+
+            return Ok(sortedTracks);
         }
+
         [HttpGet("liked-tracks-ids")]
         public async Task<ActionResult<IEnumerable<Guid>>> GetLikedTracksIds()
         {
