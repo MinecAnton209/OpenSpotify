@@ -1,12 +1,20 @@
 ﻿"use client";
 
+import '@/lib/polyfills'
 import { useAuthStore } from '@/stores/authStore';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, Fragment } from 'react';
 import apiClient from '@/lib/apiClient';
-import { HomeIcon, MagnifyingGlassIcon, BuildingLibraryIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
+import { Menu, Transition, Portal } from '@headlessui/react';
+import {
+    HomeIcon,
+    MagnifyingGlassIcon,
+    BuildingLibraryIcon,
+    PlusCircleIcon,
+    EllipsisHorizontalIcon
+} from '@heroicons/react/24/outline';
 import Modal from './Modal';
 
 interface Playlist {
@@ -18,14 +26,14 @@ const Sidebar = () => {
     const { isAuthenticated, user, logout } = useAuthStore();
     const router = useRouter();
 
-    const { playlists, setPlaylists } = useSidebarStore();
+    const { playlists, setPlaylists, addPlaylist, removePlaylist } = useSidebarStore();
 
     const [isLoadingPlaylists, setIsLoadingPlaylists] = useState(true);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newPlaylistName, setNewPlaylistName] = useState('');
     const [isCreating, setIsCreating] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [createError, setCreateError] = useState<string | null>(null);
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -54,29 +62,41 @@ const Sidebar = () => {
 
     const handleCreatePlaylistClick = () => {
         setNewPlaylistName('');
-        setError(null);
+        setCreateError(null);
         setIsModalOpen(true);
     };
 
     const handlePlaylistFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newPlaylistName.trim()) {
-            setError("Playlist name cannot be empty.");
+            setCreateError("Playlist name cannot be empty.");
             return;
         }
-
         setIsCreating(true);
-        setError(null);
-
+        setCreateError(null);
         try {
             const newPlaylist = await apiClient.post<Playlist>('/api/playlists', { name: newPlaylistName });
-            setPlaylists([...playlists, newPlaylist]);
+            addPlaylist(newPlaylist);
             setIsModalOpen(false);
         } catch (err) {
-            setError("Failed to create playlist. Please try again.");
-            console.error(err);
+            setCreateError("Failed to create playlist. Please try again.");
         } finally {
             setIsCreating(false);
+        }
+    };
+
+    const handleDeletePlaylist = async (playlistId: string, playlistName: string) => {
+        if (!confirm(`Are you sure you want to delete the playlist "${playlistName}"? This action cannot be undone.`)) {
+            return;
+        }
+        try {
+            await apiClient.delete(`/api/playlists/${playlistId}`);
+            removePlaylist(playlistId);
+            if (window.location.pathname === `/playlists/${playlistId}`) {
+                router.push('/');
+            }
+        } catch (err) {
+            alert("Error: Could not delete the playlist.");
         }
     };
 
@@ -94,15 +114,17 @@ const Sidebar = () => {
                     </Link>
                 </div>
 
-                <div className="bg-gray-900 rounded-lg mt-2 flex-1 p-2 flex flex-col">
+                <div className="bg-gray-900 rounded-lg mt-2 flex-1 p-2 flex flex-col overflow-hidden">
                     <div className="flex justify-between items-center px-2 mb-2">
                         <div className="flex items-center gap-3 text-white font-bold text-md cursor-pointer">
                             <BuildingLibraryIcon className="w-6 h-6" />
                             <span>Your Library</span>
                         </div>
-                        <button onClick={handleCreatePlaylistClick} className="text-gray-400 hover:text-white" title="Create a new playlist">
-                            <PlusCircleIcon className="w-6 h-6" />
-                        </button>
+                        {isAuthenticated && (
+                            <button onClick={handleCreatePlaylistClick} className="text-gray-400 hover:text-white" title="Create a new playlist">
+                                <PlusCircleIcon className="w-6 h-6" />
+                            </button>
+                        )}
                     </div>
 
                     <div className="overflow-y-auto flex-1">
@@ -111,20 +133,63 @@ const Sidebar = () => {
                                 <p className="text-gray-400 text-sm px-2">Loading playlists...</p>
                             ) : (
                                 <ul className="mt-2 space-y-1">
-                                    {playlists.map(playlist => (
-                                        <li key={playlist.id}>
+                                    {playlists.map((playlist) => (
+                                        <li
+                                            key={playlist.id}
+                                            className="relative group flex items-center justify-between p-2 rounded-md hover:bg-gray-800"
+                                        >
                                             <Link
                                                 href={`/playlists/${playlist.id}`}
-                                                className="block p-2 rounded-md text-gray-300 hover:bg-gray-800 hover:text-white text-sm truncate"
+                                                className="text-gray-300 hover:text-white text-sm truncate flex-1"
                                             >
                                                 {playlist.name}
                                             </Link>
+                                            <Menu as="div" className="relative ml-2">
+                                                <Menu.Button className="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+                                                    <EllipsisHorizontalIcon className="w-5 h-5" />
+                                                </Menu.Button>
+
+                                                <Transition
+                                                    as={Fragment}
+                                                    enter="transition ease-out duration-100"
+                                                    enterFrom="transform opacity-0 scale-95"
+                                                    enterTo="transform opacity-100 scale-100"
+                                                    leave="transition ease-in duration-75"
+                                                    leaveFrom="transform opacity-100 scale-100"
+                                                    leaveTo="transform opacity-0 scale-95"
+                                                >
+                                                    <Menu.Items className="absolute right-0 top-full mt-1 w-48 origin-top-right rounded-md bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                                                        <div className="px-1 py-1">
+                                                            <Menu.Item>
+                                                                {({ active }) => (
+                                                                    <button
+                                                                        onClick={() =>
+                                                                            handleDeletePlaylist(playlist.id, playlist.name)
+                                                                        }
+                                                                        className={`${
+                                                                            active ? 'bg-red-600 text-white' : 'text-red-400'
+                                                                        } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                                                                    >
+                                                                        Delete playlist
+                                                                    </button>
+                                                                )}
+                                                            </Menu.Item>
+                                                        </div>
+                                                    </Menu.Items>
+                                                </Transition>
+                                            </Menu>
                                         </li>
                                     ))}
                                 </ul>
                             )
                         ) : (
-                            <p className="text-gray-400 text-sm p-4 bg-gray-800 rounded-md">Log in to see your playlists.</p>
+                            <div className="p-4 text-center">
+                                <p className="text-sm font-semibold">Create your first playlist</p>
+                                <p className="text-xs text-gray-400 mt-1">It's easy, we'll help you</p>
+                                <button onClick={handleCreatePlaylistClick} className="mt-4 bg-white text-black font-bold py-1 px-4 rounded-full text-sm">
+                                    Create playlist
+                                </button>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -173,7 +238,7 @@ const Sidebar = () => {
                             autoFocus
                         />
                     </div>
-                    {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+                    {createError && <p className="text-red-500 text-sm mb-4">{createError}</p>}
                     <div className="flex justify-end gap-4">
                         <button
                             type="button"

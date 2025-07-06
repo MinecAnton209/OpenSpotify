@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import apiClient from '@/lib/apiClient';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -38,14 +38,18 @@ export default function PlaylistDetailPage() {
 
     const setTrack = usePlayerStore((state) => state.setTrack);
 
+    const [isEditing, setIsEditing] = useState(false);
+    const [newName, setNewName] = useState('');
+    const inputRef = useRef<HTMLInputElement>(null);
+
     useEffect(() => {
         if (!id) return;
-
         const fetchPlaylistDetails = async () => {
             setIsLoading(true);
             try {
                 const data = await apiClient.get<PlaylistDetails>(`/api/playlists/${id}`);
                 setPlaylist(data);
+                setNewName(data.name);
             } catch (err) {
                 setError('Failed to fetch playlist details.');
                 console.error(err);
@@ -53,15 +57,47 @@ export default function PlaylistDetailPage() {
                 setIsLoading(false);
             }
         };
-
         fetchPlaylistDetails();
     }, [id]);
 
-    const handleRemoveTrack = async (trackId: string) => {
-        if (!playlist) return;
-        if (!confirm(`Are you sure you want to remove this track from "${playlist.name}"?`)) {
+    useEffect(() => {
+        if (isEditing) {
+            inputRef.current?.select();
+        }
+    }, [isEditing]);
+
+    const handleTitleClick = () => setIsEditing(true);
+
+    const handleNameChange = async () => {
+        if (!playlist || !newName.trim() || newName === playlist.name) {
+            setIsEditing(false);
             return;
         }
+
+        try {
+            await apiClient.put(`/api/playlists/${playlist.id}`, { name: newName });
+            setPlaylist(prev => prev ? { ...prev, name: newName } : null);
+        } catch (err) {
+            alert("Error: Could not rename the playlist.");
+            setNewName(playlist.name);
+        } finally {
+            setIsEditing(false);
+        }
+    };
+
+    const handleInputBlur = () => handleNameChange();
+    const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') handleNameChange();
+        if (e.key === 'Escape') {
+            setIsEditing(false);
+            setNewName(playlist?.name || '');
+        }
+    };
+
+    const handleRemoveTrack = async (trackId: string) => {
+        if (!playlist) return;
+        if (!confirm(`Are you sure you want to remove this track from "${playlist.name}"?`)) return;
+
         try {
             await apiClient.delete(`/api/playlists/${playlist.id}/tracks/${trackId}`);
             setPlaylist(prev => prev ? { ...prev, tracks: prev.tracks.filter(t => t.id !== trackId) } : null);
@@ -91,7 +127,21 @@ export default function PlaylistDetailPage() {
                 </div>
                 <div className="text-center sm:text-left">
                     <p className="text-sm font-bold">Playlist</p>
-                    <h1 className="text-5xl md:text-7xl font-bold break-words">{playlist.name}</h1>
+                    {isEditing ? (
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={newName}
+                            onChange={(e) => setNewName(e.target.value)}
+                            onBlur={handleInputBlur}
+                            onKeyDown={handleInputKeyDown}
+                            className="text-5xl md:text-7xl font-bold bg-transparent border-b-2 border-white outline-none w-full"
+                        />
+                    ) : (
+                        <h1 onClick={handleTitleClick} className="text-5xl md:text-7xl font-bold break-words cursor-pointer hover:bg-white/10 p-2 rounded-md">
+                            {playlist.name}
+                        </h1>
+                    )}
                     <p className="mt-4 font-semibold text-gray-300">{playlist.ownerName}</p>
                 </div>
             </div>

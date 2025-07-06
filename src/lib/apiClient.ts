@@ -12,6 +12,9 @@ const apiClient = {
     delete: async (endpoint: string): Promise<void> => {
         return request<void>(endpoint, 'DELETE');
     },
+    put: async <T>(endpoint: string, body: any): Promise<T> => {
+        return request<T>(endpoint, 'PUT', body);
+    },
 };
 
 async function request<T>(endpoint: string, method: string, body?: any): Promise<T> {
