@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react';
 import apiClient from '@/lib/apiClient';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { usePlayerStore } from '@/stores/playerStore';
+import { usePlayerStore, TrackInfo } from '@/stores/playerStore';
 import { ClockIcon, HashtagIcon } from '@heroicons/react/24/outline';
+import TrackContextMenu from '@/components/TrackContextMenu';
 
 interface Track {
     id: string;
@@ -19,7 +20,6 @@ interface AlbumDetails {
     coverImageUrl: string | null;
     artistId: string;
     artistName: string;
-    albums: any[];
     tracks: Track[];
 }
 
@@ -41,7 +41,6 @@ export default function AlbumDetailPage() {
 
     useEffect(() => {
         if (!id) return;
-
         const fetchAlbumDetails = async () => {
             setIsLoading(true);
             try {
@@ -54,32 +53,32 @@ export default function AlbumDetailPage() {
                 setIsLoading(false);
             }
         };
-
         fetchAlbumDetails();
     }, [id]);
 
     const handleTrackClick = (track: Track) => {
         if (!album) return;
 
-        setTrack({
+        const playbackQueue: TrackInfo[] = album.tracks.map(t => ({
+            id: t.id,
+            title: t.title,
+            artistName: album.artistName,
+            coverImageUrl: album.coverImageUrl,
+        }));
+
+        const currentTrackInfo: TrackInfo = {
             id: track.id,
             title: track.title,
             artistName: album.artistName,
             coverImageUrl: album.coverImageUrl,
-        });
+        };
+
+        setTrack(currentTrackInfo, playbackQueue);
     };
 
-    if (isLoading) {
-        return <div className="text-center mt-10">Loading album...</div>;
-    }
-
-    if (error) {
-        return <div className="text-center mt-10 text-red-500">{error}</div>;
-    }
-
-    if (!album) {
-        return <div className="text-center mt-10">Album not found.</div>;
-    }
+    if (isLoading) return <div className="text-center mt-10">Loading album...</div>;
+    if (error) return <div className="text-center mt-10 text-red-500">{error}</div>;
+    if (!album) return <div className="text-center mt-10">Album not found.</div>;
 
     return (
         <div>
@@ -103,21 +102,34 @@ export default function AlbumDetailPage() {
             </div>
 
             <div className="mt-6">
-                <div className="grid grid-cols-[auto,1fr,auto] gap-4 text-gray-400 p-2 border-b border-gray-700 mb-2">
+                <div className="grid grid-cols-[auto,1fr,auto,auto] gap-4 text-gray-400 p-2 border-b border-gray-700 mb-2">
                     <HashtagIcon className="w-5 h-5 ml-2" />
                     <div>Title</div>
+                    <div/>
                     <ClockIcon className="w-5 h-5" />
                 </div>
                 <ul>
                     {album.tracks.map((track, index) => (
                         <li
                             key={track.id}
-                            onClick={() => handleTrackClick(track)}
-                            className="grid grid-cols-[auto,1fr,auto] gap-4 p-2 rounded-md hover:bg-gray-800 items-center group cursor-pointer"
+                            className="grid grid-cols-[auto,1fr,auto,auto] gap-4 p-2 rounded-md hover:bg-gray-800 items-center group"
                         >
-                            <span className="text-gray-400 w-8 text-center">{index + 1}</span>
-                            <p className="font-semibold text-white">{track.title}</p>
+                            <div
+                                className="w-8 text-center text-gray-400 cursor-pointer"
+                                onClick={() => handleTrackClick(track)}
+                            >
+                                {index + 1}
+                            </div>
+                            <div
+                                className="cursor-pointer"
+                                onClick={() => handleTrackClick(track)}
+                            >
+                                <p className="font-semibold text-white">{track.title}</p>
+                            </div>
                             <span className="text-gray-400">{formatDuration(track.durationInSeconds)}</span>
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                <TrackContextMenu trackId={track.id} />
+                            </div>
                         </li>
                     ))}
                 </ul>

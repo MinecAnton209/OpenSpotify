@@ -1,5 +1,6 @@
 "use client";
 
+import '@/lib/polyfills';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import apiClient from '@/lib/apiClient';
