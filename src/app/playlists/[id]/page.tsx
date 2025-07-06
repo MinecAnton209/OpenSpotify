@@ -8,6 +8,7 @@ import { usePlayerStore, TrackInfo } from '@/stores/playerStore';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import { TrashIcon, ClockIcon, HashtagIcon, MusicalNoteIcon } from '@heroicons/react/24/outline';
 import TrackContextMenu from '@/components/TrackContextMenu';
+import toast from 'react-hot-toast';
 
 interface Track {
     id: string;
@@ -56,7 +57,7 @@ export default function PlaylistDetailPage() {
                 setNewName(data.name);
             } catch (err) {
                 setError('Failed to fetch playlist details.');
-                console.error(err);
+                toast.error('Failed to fetch playlist details.');
             } finally {
                 setIsLoading(false);
             }
@@ -81,8 +82,9 @@ export default function PlaylistDetailPage() {
             await apiClient.put(`/api/playlists/${playlist.id}`, { name: newName });
             setPlaylist(prev => prev ? { ...prev, name: newName } : null);
             updatePlaylistNameInSidebar(playlist.id, newName);
+            toast.success('Playlist renamed.');
         } catch (err) {
-            alert("Error: Could not rename the playlist.");
+            toast.error("Could not rename the playlist.");
             setNewName(playlist.name);
         } finally {
             setIsEditing(false);
@@ -100,17 +102,23 @@ export default function PlaylistDetailPage() {
 
     const handleRemoveTrack = async (trackId: string) => {
         if (!playlist) return;
-        if (!confirm(`Are you sure you want to remove this track from "${playlist.name}"?`)) return;
+        const track = playlist.tracks.find(t => t.id === trackId);
+        if (!track) return;
+
+        const confirmed = window.confirm(`Are you sure you want to remove "${track.title}" from "${playlist.name}"?`);
+        if (!confirmed) return;
+
         try {
             await apiClient.delete(`/api/playlists/${playlist.id}/tracks/${trackId}`);
             setPlaylist(prev => prev ? { ...prev, tracks: prev.tracks.filter(t => t.id !== trackId) } : null);
+            toast.success(`Removed "${track.title}" from playlist.`);
         } catch (err) {
-            alert("Error: Could not remove the track.");
+            toast.error("Could not remove the track.");
         }
     };
 
     const handleTrackClick = (track: Track) => {
-        if(!playlist) return;
+        if (!playlist) return;
         const playbackQueue: TrackInfo[] = playlist.tracks.map(t => ({
             id: t.id,
             title: t.title,

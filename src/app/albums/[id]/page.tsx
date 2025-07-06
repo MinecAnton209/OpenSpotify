@@ -103,18 +103,17 @@ export default function AlbumDetailPage() {
             </div>
 
             <div className="mt-6">
-                <div className="grid grid-cols-[auto,1fr,auto,auto,auto] gap-4 text-gray-400 p-2 border-b border-gray-700 mb-2">
+                <div className="grid grid-cols-[auto,1fr,auto,auto] gap-4 text-gray-400 p-2 border-b border-gray-700 mb-2">
                     <HashtagIcon className="w-5 h-5 ml-2" />
                     <div>Title</div>
-                    <div/>
-                    <div/>
+                    <div className="col-span-1" />
                     <ClockIcon className="w-5 h-5" />
                 </div>
                 <ul>
                     {album.tracks.map((track, index) => (
                         <li
                             key={track.id}
-                            className="grid grid-cols-[auto,1fr,auto,auto,auto] gap-4 p-2 rounded-md hover:bg-gray-800 items-center group"
+                            className="grid grid-cols-[auto,1fr,auto,auto] gap-4 p-2 rounded-md hover:bg-gray-800 items-center group"
                         >
                             <div
                                 className="w-8 text-center text-gray-400 cursor-pointer"
@@ -128,16 +127,15 @@ export default function AlbumDetailPage() {
                             >
                                 <p className="font-semibold text-white">{track.title}</p>
                             </div>
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <LikeButton trackId={track.id} />
-                            </div>
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                                 <TrackContextMenu trackId={track.id} />
                             </div>
                             <span className="text-gray-400 text-right pr-2">{formatDuration(track.durationInSeconds)}</span>
                         </li>
                     ))}
                 </ul>
+
             </div>
         </div>
     );
