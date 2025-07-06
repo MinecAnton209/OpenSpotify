@@ -1,5 +1,4 @@
-﻿// src/components/Sidebar.tsx
-"use client";
+﻿"use client";
 
 import '@/lib/polyfills';
 import { useAuthStore } from '@/stores/authStore';
@@ -8,7 +7,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, Fragment } from 'react';
 import apiClient from '@/lib/apiClient';
-import { Menu, Transition, Portal } from '@headlessui/react';
+import { Menu, Transition } from '@headlessui/react';
 import {
     HomeIcon,
     MagnifyingGlassIcon,
@@ -18,6 +17,7 @@ import {
 } from '@heroicons/react/24/outline';
 import Modal from './Modal';
 import toast from "react-hot-toast";
+import { useLibraryStore } from '@/stores/libraryStore';
 
 interface Playlist {
     id: string;
@@ -32,14 +32,15 @@ const Sidebar = () => {
 
     const [isLoadingPlaylists, setIsLoadingPlaylists] = useState(true);
 
-    // Стани для модального вікна
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newPlaylistName, setNewPlaylistName] = useState('');
     const [isCreating, setIsCreating] = useState(false);
     const [createError, setCreateError] = useState<string | null>(null);
+    const fetchLikedTracks = useLibraryStore(state => state.fetchLikedTracks);
 
     useEffect(() => {
         if (isAuthenticated) {
+            fetchLikedTracks();
             setIsLoadingPlaylists(true);
             const fetchPlaylists = async () => {
                 try {
@@ -52,11 +53,12 @@ const Sidebar = () => {
                 }
             };
             fetchPlaylists();
+
         } else {
             setPlaylists([]);
             setIsLoadingPlaylists(false);
         }
-    }, [isAuthenticated, setPlaylists]);
+    }, [isAuthenticated, setPlaylists, fetchLikedTracks]);
 
     const handleLogout = () => {
         logout();
@@ -108,7 +110,6 @@ const Sidebar = () => {
     return (
         <Fragment>
             <aside className="w-64 bg-black p-2 shrink-0 flex flex-col">
-                {/* Верхній блок навігації */}
                 <div className="bg-gray-900 rounded-lg p-4 space-y-4">
                     <Link href="/" className="flex items-center gap-3 text-white font-bold text-md hover:text-gray-300">
                         <HomeIcon className="w-6 h-6" />
@@ -120,7 +121,6 @@ const Sidebar = () => {
                     </Link>
                 </div>
 
-                {/* Середній блок з бібліотекою та плейлистами */}
                 <div className="bg-gray-900 rounded-lg mt-2 flex-1 p-2 flex flex-col overflow-hidden">
                     <div className="flex justify-between items-center px-2 mb-2">
                         <div className="flex items-center gap-3 text-white font-bold text-md cursor-pointer">
