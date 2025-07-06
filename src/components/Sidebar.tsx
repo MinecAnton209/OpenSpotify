@@ -1,6 +1,7 @@
-﻿"use client";
+﻿// src/components/Sidebar.tsx
+"use client";
 
-import '@/lib/polyfills'
+import '@/lib/polyfills';
 import { useAuthStore } from '@/stores/authStore';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import Link from 'next/link';
@@ -16,6 +17,7 @@ import {
     EllipsisHorizontalIcon
 } from '@heroicons/react/24/outline';
 import Modal from './Modal';
+import toast from "react-hot-toast";
 
 interface Playlist {
     id: string;
@@ -30,6 +32,7 @@ const Sidebar = () => {
 
     const [isLoadingPlaylists, setIsLoadingPlaylists] = useState(true);
 
+    // Стани для модального вікна
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newPlaylistName, setNewPlaylistName] = useState('');
     const [isCreating, setIsCreating] = useState(false);
@@ -78,6 +81,7 @@ const Sidebar = () => {
             const newPlaylist = await apiClient.post<Playlist>('/api/playlists', { name: newPlaylistName });
             addPlaylist(newPlaylist);
             setIsModalOpen(false);
+            toast.success(`Playlist "${newPlaylist.name}" created!`);
         } catch (err) {
             setCreateError("Failed to create playlist. Please try again.");
         } finally {
@@ -92,17 +96,19 @@ const Sidebar = () => {
         try {
             await apiClient.delete(`/api/playlists/${playlistId}`);
             removePlaylist(playlistId);
+            toast.success(`Playlist "${playlistName}" deleted.`);
             if (window.location.pathname === `/playlists/${playlistId}`) {
                 router.push('/');
             }
         } catch (err) {
-            alert("Error: Could not delete the playlist.");
+            toast.error("Could not delete the playlist.");
         }
     };
 
     return (
         <Fragment>
             <aside className="w-64 bg-black p-2 shrink-0 flex flex-col">
+                {/* Верхній блок навігації */}
                 <div className="bg-gray-900 rounded-lg p-4 space-y-4">
                     <Link href="/" className="flex items-center gap-3 text-white font-bold text-md hover:text-gray-300">
                         <HomeIcon className="w-6 h-6" />
@@ -114,6 +120,7 @@ const Sidebar = () => {
                     </Link>
                 </div>
 
+                {/* Середній блок з бібліотекою та плейлистами */}
                 <div className="bg-gray-900 rounded-lg mt-2 flex-1 p-2 flex flex-col overflow-hidden">
                     <div className="flex justify-between items-center px-2 mb-2">
                         <div className="flex items-center gap-3 text-white font-bold text-md cursor-pointer">
@@ -133,51 +140,42 @@ const Sidebar = () => {
                                 <p className="text-gray-400 text-sm px-2">Loading playlists...</p>
                             ) : (
                                 <ul className="mt-2 space-y-1">
-                                    {playlists.map((playlist) => (
-                                        <li
-                                            key={playlist.id}
-                                            className="relative group flex items-center justify-between p-2 rounded-md hover:bg-gray-800"
-                                        >
-                                            <Link
-                                                href={`/playlists/${playlist.id}`}
-                                                className="text-gray-300 hover:text-white text-sm truncate flex-1"
-                                            >
+                                    {playlists.map(playlist => (
+                                        <li key={playlist.id} className="group flex items-center justify-between p-2 rounded-md hover:bg-gray-800">
+                                            <Link href={`/playlists/${playlist.id}`} className="text-gray-300 hover:text-white text-sm truncate flex-1">
                                                 {playlist.name}
                                             </Link>
-                                            <Menu as="div" className="relative ml-2">
-                                                <Menu.Button className="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
-                                                    <EllipsisHorizontalIcon className="w-5 h-5" />
-                                                </Menu.Button>
-
-                                                <Transition
-                                                    as={Fragment}
-                                                    enter="transition ease-out duration-100"
-                                                    enterFrom="transform opacity-0 scale-95"
-                                                    enterTo="transform opacity-100 scale-100"
-                                                    leave="transition ease-in duration-75"
-                                                    leaveFrom="transform opacity-100 scale-100"
-                                                    leaveTo="transform opacity-0 scale-95"
-                                                >
-                                                    <Menu.Items className="absolute right-0 top-full mt-1 w-48 origin-top-right rounded-md bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
-                                                        <div className="px-1 py-1">
-                                                            <Menu.Item>
-                                                                {({ active }) => (
-                                                                    <button
-                                                                        onClick={() =>
-                                                                            handleDeletePlaylist(playlist.id, playlist.name)
-                                                                        }
-                                                                        className={`${
-                                                                            active ? 'bg-red-600 text-white' : 'text-red-400'
-                                                                        } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
-                                                                    >
-                                                                        Delete playlist
-                                                                    </button>
-                                                                )}
-                                                            </Menu.Item>
-                                                        </div>
-                                                    </Menu.Items>
-                                                </Transition>
-                                            </Menu>
+                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Menu as="div" className="relative">
+                                                    <Menu.Button className="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+                                                        <EllipsisHorizontalIcon className="w-5 h-5"/>
+                                                    </Menu.Button>
+                                                        <Transition
+                                                            as={Fragment}
+                                                            enter="transition ease-out duration-100"
+                                                            enterFrom="transform opacity-0 scale-95"
+                                                            enterTo="transform opacity-100 scale-100"
+                                                            leave="transition ease-in duration-75"
+                                                            leaveFrom="transform opacity-100 scale-100"
+                                                            leaveTo="transform opacity-0 scale-95"
+                                                        >
+                                                            <Menu.Items className="fixed z-50 w-48 rounded-md bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                                                                <div className="px-1 py-1">
+                                                                    <Menu.Item>
+                                                                        {({ active }) => (
+                                                                            <button
+                                                                                onClick={() => handleDeletePlaylist(playlist.id, playlist.name)}
+                                                                                className={`${active ? 'bg-red-600 text-white' : 'text-red-400'} group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                                                                            >
+                                                                                Delete playlist
+                                                                            </button>
+                                                                        )}
+                                                                    </Menu.Item>
+                                                                </div>
+                                                            </Menu.Items>
+                                                        </Transition>
+                                                </Menu>
+                                            </div>
                                         </li>
                                     ))}
                                 </ul>

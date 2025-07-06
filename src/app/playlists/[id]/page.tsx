@@ -2,10 +2,12 @@
 
 import { useEffect, useState, useRef } from 'react';
 import apiClient from '@/lib/apiClient';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { usePlayerStore } from '@/stores/playerStore';
+import { usePlayerStore, TrackInfo } from '@/stores/playerStore';
+import { useSidebarStore } from '@/stores/sidebarStore';
 import { TrashIcon, ClockIcon, HashtagIcon, MusicalNoteIcon } from '@heroicons/react/24/outline';
+import TrackContextMenu from '@/components/TrackContextMenu';
 
 interface Track {
     id: string;
@@ -31,12 +33,14 @@ const formatDuration = (seconds: number) => {
 export default function PlaylistDetailPage() {
     const params = useParams();
     const id = params.id as string;
+    const router = useRouter();
 
     const [playlist, setPlaylist] = useState<PlaylistDetails | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const setTrack = usePlayerStore((state) => state.setTrack);
+    const setTrackInPlayer = usePlayerStore((state) => state.setTrack);
+    const updatePlaylistNameInSidebar = useSidebarStore((state) => state.updatePlaylistName);
 
     const [isEditing, setIsEditing] = useState(false);
     const [newName, setNewName] = useState('');
@@ -73,10 +77,10 @@ export default function PlaylistDetailPage() {
             setIsEditing(false);
             return;
         }
-
         try {
             await apiClient.put(`/api/playlists/${playlist.id}`, { name: newName });
             setPlaylist(prev => prev ? { ...prev, name: newName } : null);
+            updatePlaylistNameInSidebar(playlist.id, newName);
         } catch (err) {
             alert("Error: Could not rename the playlist.");
             setNewName(playlist.name);
@@ -97,7 +101,6 @@ export default function PlaylistDetailPage() {
     const handleRemoveTrack = async (trackId: string) => {
         if (!playlist) return;
         if (!confirm(`Are you sure you want to remove this track from "${playlist.name}"?`)) return;
-
         try {
             await apiClient.delete(`/api/playlists/${playlist.id}/tracks/${trackId}`);
             setPlaylist(prev => prev ? { ...prev, tracks: prev.tracks.filter(t => t.id !== trackId) } : null);
@@ -107,12 +110,20 @@ export default function PlaylistDetailPage() {
     };
 
     const handleTrackClick = (track: Track) => {
-        setTrack({
+        if(!playlist) return;
+        const playbackQueue: TrackInfo[] = playlist.tracks.map(t => ({
+            id: t.id,
+            title: t.title,
+            artistName: t.artistName,
+            coverImageUrl: t.albumCoverImageUrl,
+        }));
+        const currentTrackInfo: TrackInfo = {
             id: track.id,
             title: track.title,
             artistName: track.artistName,
             coverImageUrl: track.albumCoverImageUrl,
-        });
+        };
+        setTrackInPlayer(currentTrackInfo, playbackQueue);
     };
 
     if (isLoading) return <div className="text-center mt-10">Loading playlist...</div>;
@@ -149,24 +160,30 @@ export default function PlaylistDetailPage() {
             <div className="mt-6">
                 {playlist.tracks.length > 0 ? (
                     <div>
-                        <div className="grid grid-cols-[auto,1fr,auto,auto] gap-4 text-gray-400 p-2 border-b border-gray-700 mb-2">
+                        <div className="grid grid-cols-[auto,1fr,1fr,auto,auto] gap-4 text-gray-400 p-2 border-b border-gray-700 mb-2">
                             <HashtagIcon className="w-5 h-5 ml-2" />
                             <div>Title</div>
+                            <div>Album</div>
                             <div/>
                             <ClockIcon className="w-5 h-5 mr-2" />
                         </div>
                         <ul>
                             {playlist.tracks.map((track, index) => (
-                                <li key={track.id} className="grid grid-cols-[auto,1fr,auto,auto] gap-4 p-2 rounded-md hover:bg-gray-800 items-center group">
+                                <li key={track.id} className="grid grid-cols-[auto,1fr,1fr,auto,auto] gap-4 p-2 rounded-md hover:bg-gray-800 items-center group">
                                     <div className="w-8 text-center text-gray-400 cursor-pointer" onClick={() => handleTrackClick(track)}>
                                         {index + 1}
                                     </div>
-                                    <div className="cursor-pointer" onClick={() => handleTrackClick(track)}>
-                                        <p className="font-semibold text-white">{track.title}</p>
-                                        <p className="text-sm text-gray-400">{track.artistName}</p>
+                                    <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleTrackClick(track)}>
+                                        <img src={track.albumCoverImageUrl || 'https://placehold.co/40'} alt="album cover" className="w-10 h-10 rounded-sm"/>
+                                        <div>
+                                            <p className="font-semibold text-white">{track.title}</p>
+                                            <p className="text-sm text-gray-400">{track.artistName}</p>
+                                        </div>
                                     </div>
+                                    <p className="text-sm text-gray-400">Album Name Here</p>
                                     <span className="text-gray-400">{formatDuration(track.durationInSeconds)}</span>
-                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+                                        <TrackContextMenu trackId={track.id} />
                                         <button onClick={() => handleRemoveTrack(track.id)} className="p-1 text-gray-400 hover:text-red-500" title="Remove from playlist">
                                             <TrashIcon className="w-5 h-5" />
                                         </button>

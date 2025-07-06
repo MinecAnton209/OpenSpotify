@@ -4,6 +4,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import Player from "./Player";
+import { Toaster } from 'react-hot-toast';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
     const { isAuthenticated } = useAuthStore();
@@ -19,6 +20,15 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
     return (
         <div className="flex h-screen flex-col">
+            <Toaster
+                position="bottom-center"
+                toastOptions={{
+                    style: {
+                        background: '#333',
+                        color: '#fff',
+                    },
+                }}
+            />
             <div className="flex flex-1 overflow-hidden">
                 <Sidebar />
                 <main className="flex-1 overflow-y-auto p-8">{children}</main>
