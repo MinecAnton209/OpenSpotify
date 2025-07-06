@@ -16,6 +16,7 @@ namespace OpenSpotify.API.Data
         public DbSet<Track> Tracks { get; set; }
         public DbSet<Playlist> Playlists { get; set; }
         public DbSet<PlaylistTrack> PlaylistTracks { get; set; }
+        public DbSet<LikedTrack> LikedTracks { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -51,6 +52,19 @@ namespace OpenSpotify.API.Data
                 .HasOne(pt => pt.Track)
                 .WithMany(t => t.PlaylistTracks)
                 .HasForeignKey(pt => pt.TrackId);
+            
+            builder.Entity<LikedTrack>()
+                .HasKey(lt => new { lt.UserId, lt.TrackId });
+            
+            builder.Entity<LikedTrack>()
+               .HasOne(lt => lt.User)
+               .WithMany()
+               .HasForeignKey(lt => lt.UserId);
+            
+            builder.Entity<LikedTrack>()
+                .HasOne(lt => lt.Track)
+                .WithMany()
+                .HasForeignKey(lt => lt.TrackId);
         }
     }
 }
