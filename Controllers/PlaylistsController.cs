@@ -169,5 +169,41 @@ namespace OpenSpotify.API.Controllers
     
             return NoContent();
         }
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdatePlaylist(Guid id, UpdatePlaylistDto updateDto)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var playlist = await _context.Playlists
+                .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
+
+            if (playlist == null)
+            {
+                return NotFound(new { message = "Playlist not found or you don't have access." });
+            }
+
+            playlist.Name = updateDto.Name;
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeletePlaylist(Guid id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var playlist = await _context.Playlists
+                .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
+
+            if (playlist == null)
+            {
+                return NotFound(new { message = "Playlist not found or you don't have access." });
+            }
+
+            _context.Playlists.Remove(playlist);
+            await _context.SaveChangesAsync();
+    
+            return NoContent();
+        }
     }
 }
