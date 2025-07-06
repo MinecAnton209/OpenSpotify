@@ -18,6 +18,7 @@ import {
 import Modal from './Modal';
 import toast from "react-hot-toast";
 import { useLibraryStore } from '@/stores/libraryStore';
+import {HeartIcon} from "@heroicons/react/24/solid";
 
 interface Playlist {
     id: string;
@@ -140,6 +141,14 @@ const Sidebar = () => {
                                 <p className="text-gray-400 text-sm px-2">Loading playlists...</p>
                             ) : (
                                 <ul className="mt-2 space-y-1">
+                                    <li>
+                                        <Link href="/library/liked" className="flex items-center gap-3 p-2 rounded-md text-gray-300 hover:bg-gray-800 hover:text-white">
+                                            <div className="w-6 h-6 bg-gradient-to-br from-indigo-600 to-purple-400 flex items-center justify-center rounded-sm">
+                                                <HeartIcon className="w-4 h-4 text-white"/>
+                                            </div>
+                                            <span className="text-sm font-semibold">Liked Songs</span>
+                                        </Link>
+                                    </li>
                                     {playlists.map(playlist => (
                                         <li key={playlist.id} className="group flex items-center justify-between p-2 rounded-md hover:bg-gray-800">
                                             <Link href={`/playlists/${playlist.id}`} className="text-gray-300 hover:text-white text-sm truncate flex-1">

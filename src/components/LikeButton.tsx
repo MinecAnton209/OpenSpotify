@@ -5,15 +5,20 @@ import { useLibraryStore } from '@/stores/libraryStore';
 
 interface LikeButtonProps {
     trackId: string;
+    onUnlike?: (trackId: string) => void;
 }
 
-export default function LikeButton({ trackId }: LikeButtonProps) {
+export default function LikeButton({ trackId, onUnlike }: LikeButtonProps) {
     const { isLiked, toggleLikeTrack } = useLibraryStore();
     const liked = isLiked(trackId);
 
     const handleToggle = (e: React.MouseEvent) => {
         e.stopPropagation();
         toggleLikeTrack(trackId);
+
+        if (liked && onUnlike) {
+            onUnlike(trackId);
+        }
     };
 
     return (
