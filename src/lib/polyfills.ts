@@ -1,13 +1,19 @@
-﻿if (typeof window !== 'undefined') {
-    if (window.navigator && !window.navigator.userAgentData) {
-        window.navigator.userAgentData = {
+﻿if (typeof window !== 'undefined' && typeof navigator !== 'undefined') {
+    try {
+        const uaData = navigator.userAgentData;
+
+        if (!uaData || !Array.isArray(uaData.brands)) {
+            (navigator as any).userAgentData = {
+                brands: [],
+                mobile: false,
+                getHighEntropyValues: async () => ({}),
+            };
+        }
+    } catch (e) {
+        (navigator as any).userAgentData = {
             brands: [],
             mobile: false,
-            platform: '',
+            getHighEntropyValues: async () => ({}),
         };
-    } else if (window.navigator && window.navigator.userAgentData) {
-        if (!Array.isArray(window.navigator.userAgentData.brands)) {
-            window.navigator.userAgentData.brands = [];
-        }
     }
 }
