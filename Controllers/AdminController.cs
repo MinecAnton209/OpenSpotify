@@ -39,5 +39,47 @@ namespace OpenSpotify.API.Controllers
 
             return Ok(userDtos);
         }
+        [HttpPost("users/{userId}/assign-artist-role")]
+        public async Task<IActionResult> AssignArtistRole(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            if (await _userManager.IsInRoleAsync(user, "Artist"))
+            {
+                return BadRequest("User is already an artist.");
+            }
+
+            var result = await _userManager.AddToRoleAsync(user, "Artist");
+
+            if (result.Succeeded)
+            {
+                return Ok(new { message = "Artist role assigned successfully." });
+            }
+
+            return BadRequest(result.Errors);
+        }
+        
+        [HttpDelete("users/{userId}/remove-artist-role")]
+        public async Task<IActionResult> RemoveArtistRole(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+    
+            var result = await _userManager.RemoveFromRoleAsync(user, "Artist");
+
+            if (result.Succeeded)
+            {
+                return Ok(new { message = "Artist role removed successfully." });
+            }
+
+            return BadRequest(result.Errors);
+        }
     }
 }
