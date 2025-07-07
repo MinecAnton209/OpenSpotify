@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import apiClient from '@/lib/apiClient';
 import { useParams } from 'next/navigation';
 import Link from "next/link";
+import Skeleton from "@/components/ui/Skeleton";
+import {CardGridSkeleton} from "@/components/CardSkeleton";
 
 interface Album {
     id: number;
@@ -48,7 +50,21 @@ export default function ArtistDetailPage() {
     }, [id]);
 
     if (isLoading) {
-        return <div className="text-center mt-10">Loading artist...</div>;
+        return (
+            <div>
+                <div className="flex items-end gap-6 mb-8">
+                    <Skeleton className="w-48 h-48 rounded-full" />
+                    <div className="flex-1">
+                        <Skeleton className="h-8 w-1/4 mb-2" />
+                        <Skeleton className="h-16 w-1/2" />
+                    </div>
+                </div>
+                <div>
+                    <h2 className="text-2xl font-bold mb-4">Albums</h2>
+                    <CardGridSkeleton count={4} />
+                </div>
+            </div>
+        );
     }
 
     if (error) {

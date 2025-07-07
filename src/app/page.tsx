@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 import apiClient from '@/lib/apiClient';
 import Link from 'next/link';
+import { CardGridSkeleton } from '@/components/CardSkeleton';
 
 interface Artist {
     id: string;
@@ -42,7 +43,13 @@ export default function HomePage() {
     }, [isAuthenticated]);
 
     if (isLoading) {
-        return <div className="text-center">Loading...</div>;
+        return (
+            <div>
+                <h1 className="text-3xl font-bold mb-6">Welcome!</h1>
+                <h2 className="text-2xl font-bold mb-4">Featured Artists</h2>
+                <CardGridSkeleton count={5} isCircle={true} />
+            </div>
+        );
     }
 
     if (!isAuthenticated) {

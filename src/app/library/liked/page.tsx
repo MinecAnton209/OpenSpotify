@@ -8,6 +8,8 @@ import { useLibraryStore } from '@/stores/libraryStore';
 import { ClockIcon, HashtagIcon, HeartIcon } from '@heroicons/react/24/solid';
 import TrackContextMenu from '@/components/TrackContextMenu';
 import LikeButton from '@/components/LikeButton';
+import Skeleton from "@/components/ui/Skeleton";
+import {CardGridSkeleton} from "@/components/CardSkeleton";
 
 interface Track {
     id: string;
@@ -66,7 +68,23 @@ export default function LikedSongsPage() {
         setTrackInPlayer(trackToPlay, playbackQueue.slice(index));
     };
 
-    if (isLoading) return <div className="text-center mt-10">Loading...</div>;
+    if (isLoading) {
+        return (
+            <div>
+                <div className="flex items-end gap-6 mb-8">
+                    <Skeleton className="w-48 h-48 rounded-full" />
+                    <div className="flex-1">
+                        <Skeleton className="h-8 w-1/4 mb-2" />
+                        <Skeleton className="h-16 w-1/2" />
+                    </div>
+                </div>
+                <div>
+                    <h2 className="text-2xl font-bold mb-4">Albums</h2>
+                    <CardGridSkeleton count={4} />
+                </div>
+            </div>
+        );
+    }
     if (error) return <div className="text-center mt-10 text-red-500">{error}</div>;
 
     return (
