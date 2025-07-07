@@ -10,14 +10,16 @@ namespace OpenSpotify.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "Admin")] 
+    [Authorize(Roles = "Admin")]
     public class AdminController : ControllerBase
     {
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ApplicationDbContext _context;
 
-        public AdminController(UserManager<ApplicationUser> userManager)
+        public AdminController(UserManager<ApplicationUser> userManager, ApplicationDbContext context)
         {
             _userManager = userManager;
+            _context = context;
         }
 
         [HttpGet("users")]
@@ -39,44 +41,55 @@ namespace OpenSpotify.API.Controllers
 
             return Ok(userDtos);
         }
+
         [HttpPost("users/{userId}/assign-artist-role")]
         public async Task<IActionResult> AssignArtistRole(string userId)
         {
             var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
-            {
-                return NotFound("User not found.");
-            }
+            if (user == null) return NotFound("User not found.");
+            if (await _userManager.IsInRoleAsync(user, "Artist")) return BadRequest("User is already an artist.");
 
-            if (await _userManager.IsInRoleAsync(user, "Artist"))
+            var artistProfileExists = await _context.Artists.AnyAsync(a => a.UserId == user.Id);
+            if (!artistProfileExists)
             {
-                return BadRequest("User is already an artist.");
+                var newArtist = new Artist
+                {
+                    Id = Guid.NewGuid(),
+                    Name = user.UserName,
+                    UserId = user.Id
+                };
+                await _context.Artists.AddAsync(newArtist);
             }
 
             var result = await _userManager.AddToRoleAsync(user, "Artist");
 
             if (result.Succeeded)
             {
-                return Ok(new { message = "Artist role assigned successfully." });
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Artist role assigned and profile created." });
             }
 
             return BadRequest(result.Errors);
         }
-        
+
         [HttpDelete("users/{userId}/remove-artist-role")]
         public async Task<IActionResult> RemoveArtistRole(string userId)
         {
             var user = await _userManager.FindByIdAsync(userId);
-            if (user == null)
+            if (user == null) return NotFound("User not found.");
+
+            var artistProfile = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == userId);
+            if (artistProfile != null)
             {
-                return NotFound("User not found.");
+                _context.Artists.Remove(artistProfile);
             }
-    
+
             var result = await _userManager.RemoveFromRoleAsync(user, "Artist");
 
             if (result.Succeeded)
             {
-                return Ok(new { message = "Artist role removed successfully." });
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Artist role and profile removed." });
             }
 
             return BadRequest(result.Errors);
