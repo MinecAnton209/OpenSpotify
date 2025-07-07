@@ -70,7 +70,7 @@ namespace OpenSpotify.API.Controllers
             return NoContent();
         }
 
-        [HttpGet("liked-tracks")]
+ч        [HttpGet("liked-tracks")]
         public async Task<ActionResult<IEnumerable<TrackDto>>> GetLikedTracks()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
