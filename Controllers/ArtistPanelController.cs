@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenSpotify.API.Data;
 using OpenSpotify.API.DTOs;
+using OpenSpotify.API.Entities;
 
 namespace OpenSpotify.API.Controllers
 {
@@ -61,6 +62,38 @@ namespace OpenSpotify.API.Controllers
             await _context.SaveChangesAsync();
             
             return NoContent();
+        }
+        [HttpPost("albums")]
+        public async Task<IActionResult> CreateAlbum(CreateAlbumDto dto)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    
+            var artistProfile = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == userId);
+
+            if (artistProfile == null)
+            {
+                return Forbid("Could not find an artist profile associated with this user.");
+            }
+
+            var newAlbum = new Album
+            {
+                Id = Guid.NewGuid(),
+                Title = dto.Title,
+                CoverImageUrl = dto.CoverImageUrl,
+                ArtistId = artistProfile.Id
+            };
+
+            await _context.Albums.AddAsync(newAlbum);
+            await _context.SaveChangesAsync();
+
+            var albumDto = new AlbumDto
+            {
+                Id = newAlbum.Id,
+                Title = newAlbum.Title,
+                CoverImageUrl = newAlbum.CoverImageUrl
+            };
+    
+            return CreatedAtAction(nameof(AlbumsController.GetAlbum), "Albums", new { id = newAlbum.Id }, albumDto);
         }
     }
 }
