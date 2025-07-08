@@ -95,5 +95,29 @@ namespace OpenSpotify.API.Controllers
     
             return CreatedAtAction(nameof(AlbumsController.GetAlbum), "Albums", new { id = newAlbum.Id }, albumDto);
         }
+        [HttpGet("albums")]
+        public async Task<ActionResult<IEnumerable<AlbumDto>>> GetMyAlbums()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var artistProfile = await _context.Artists.AsNoTracking()
+                .FirstOrDefaultAsync(a => a.UserId == userId);
+    
+            if (artistProfile == null)
+            {
+                return Forbid("Artist profile not found.");
+            }
+
+            var albums = await _context.Albums
+                .Where(a => a.ArtistId == artistProfile.Id)
+                .Select(a => new AlbumDto
+                {
+                    Id = a.Id,
+                    Title = a.Title,
+                    CoverImageUrl = a.CoverImageUrl
+                })
+                .ToListAsync();
+        
+            return Ok(albums);
+        }
     }
 }
