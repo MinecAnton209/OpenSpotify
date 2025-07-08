@@ -198,5 +198,43 @@ namespace OpenSpotify.API.Controllers
     
             return NoContent();
         }
+        [HttpPut("albums/{albumId}")]
+        public async Task<IActionResult> UpdateAlbum(Guid albumId, CreateAlbumDto dto)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var artistProfile = await _context.Artists.AsNoTracking().FirstOrDefaultAsync(a => a.UserId == userId);
+            if (artistProfile == null) return Forbid();
+
+            var album = await _context.Albums.FirstOrDefaultAsync(a => a.Id == albumId && a.ArtistId == artistProfile.Id);
+            if (album == null)
+            {
+                return NotFound(new { message = "Album not found or you don't have access to it." });
+            }
+
+            album.Title = dto.Title;
+            album.CoverImageUrl = dto.CoverImageUrl;
+    
+            await _context.SaveChangesAsync();
+    
+            return NoContent();
+        }
+        [HttpDelete("albums/{albumId}")]
+        public async Task<IActionResult> DeleteAlbum(Guid albumId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var artistProfile = await _context.Artists.AsNoTracking().FirstOrDefaultAsync(a => a.UserId == userId);
+            if (artistProfile == null) return Forbid();
+
+            var album = await _context.Albums.FirstOrDefaultAsync(a => a.Id == albumId && a.ArtistId == artistProfile.Id);
+            if (album == null)
+            {
+                return NotFound(new { message = "Album not found or you don't have access to it." });
+            }
+
+            _context.Albums.Remove(album);
+            await _context.SaveChangesAsync();
+    
+            return NoContent();
+        }
     }
 }
