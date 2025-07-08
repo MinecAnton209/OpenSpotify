@@ -5,15 +5,22 @@ import apiClient from '@/lib/apiClient';
 import toast from 'react-hot-toast';
 import Skeleton from '@/components/ui/Skeleton';
 import Modal from '@/components/Modal';
+import Link from 'next/link';
 
 interface ArtistProfile {
     name: string;
     bio: string | null;
     profileImageUrl: string | null;
 }
+interface Album {
+    id: string;
+    title: string;
+    coverImageUrl: string | null;
+}
 
-export default function ProfileEditor() {
+export default function ArtistDashboard() {
     const [profile, setProfile] = useState<ArtistProfile | null>(null);
+    const [albums, setAlbums] = useState<Album[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -22,21 +29,26 @@ export default function ProfileEditor() {
     const [newAlbumCoverUrl, setNewAlbumCoverUrl] = useState('');
     const [isCreatingAlbum, setIsCreatingAlbum] = useState(false);
 
-    useEffect(() => {
-        const fetchProfile = async () => {
-            setIsLoading(true);
-            try {
-                const data = await apiClient.get<ArtistProfile>('/api/artist-panel/profile');
-                setProfile(data);
-            } catch (error) {
-                toast.error("Could not load your artist profile.");
-                console.error("Failed to fetch artist profile", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchProfile();
+    const fetchData = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const [profileData, albumsData] = await Promise.all([
+                apiClient.get<ArtistProfile>('/api/artist-panel/profile'),
+                apiClient.get<Album[]>('/api/artist-panel/albums')
+            ]);
+            setProfile(profileData);
+            setAlbums(albumsData);
+        } catch (error) {
+            toast.error("Could not load your dashboard data.");
+            console.error("Dashboard fetch error:", error);
+        } finally {
+            setIsLoading(false);
+        }
     }, []);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const handleSaveProfile = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -51,7 +63,7 @@ export default function ProfileEditor() {
             toast.success("Profile updated successfully!");
         } catch (error) {
             toast.error("Failed to update profile.");
-            console.error("Failed to save profile", error);
+            console.error("Failed to save profile:", error);
         } finally {
             setIsSaving(false);
         }
@@ -74,9 +86,10 @@ export default function ProfileEditor() {
             setIsAlbumModalOpen(false);
             setNewAlbumTitle('');
             setNewAlbumCoverUrl('');
+            fetchData();
         } catch (error) {
             toast.error("Failed to create album.");
-            console.error("Failed to create album", error);
+            console.error("Failed to create album:", error);
         } finally {
             setIsCreatingAlbum(false);
         }
@@ -94,7 +107,12 @@ export default function ProfileEditor() {
                     </div>
                 </div>
                 <div className="bg-gray-800 p-6 rounded-lg">
-                    <Skeleton className="h-8 w-1/4" />
+                    <Skeleton className="h-8 w-1/4 mb-4" />
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                            <div key={i}><Skeleton className="w-full aspect-square" /></div>
+                        ))}
+                    </div>
                 </div>
             </div>
         );
@@ -138,7 +156,7 @@ export default function ProfileEditor() {
             </form>
 
             <div className="bg-gray-800 p-6 rounded-lg">
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold">Your Albums</h2>
                     <button
                         type="button"
@@ -148,7 +166,20 @@ export default function ProfileEditor() {
                         Create New Album
                     </button>
                 </div>
-                <p className="text-gray-400 mt-4">Your created albums will appear here.</p>
+                {albums.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                        {albums.map(album => (
+                            <Link href={`/albums/${album.id}`} key={album.id} title={album.title}>
+                                <div className="p-2 hover:bg-gray-700 rounded-md transition-colors">
+                                    <img src={album.coverImageUrl || 'https://placehold.co/150'} alt={album.title} className="w-full aspect-square mb-2 rounded-md"/>
+                                    <p className="font-semibold truncate">{album.title}</p>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-gray-400 mt-4">You haven't created any albums yet.</p>
+                )}
             </div>
 
             <Modal
