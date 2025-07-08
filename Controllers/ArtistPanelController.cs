@@ -119,5 +119,42 @@ namespace OpenSpotify.API.Controllers
         
             return Ok(albums);
         }
+        [HttpPost("albums/{albumId}/tracks")]
+        public async Task<IActionResult> AddTrackToAlbum(Guid albumId, CreateTrackDto dto)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    
+            var artistProfile = await _context.Artists.AsNoTracking()
+                .FirstOrDefaultAsync(a => a.UserId == userId);
+            if (artistProfile == null) return Forbid();
+
+            var album = await _context.Albums.FirstOrDefaultAsync(a => a.Id == albumId && a.ArtistId == artistProfile.Id);
+            if (album == null)
+            {
+                return NotFound(new { message = "Album not found or you don't have access to it." });
+            }
+
+            var newTrack = new Track
+            {
+                Id = Guid.NewGuid(),
+                Title = dto.Title,
+                DurationInSeconds = dto.DurationInSeconds,
+                AlbumId = albumId
+            };
+
+            await _context.Tracks.AddAsync(newTrack);
+            await _context.SaveChangesAsync();
+    
+            var trackDto = new TrackDto
+            {
+                Id = newTrack.Id,
+                Title = newTrack.Title,
+                DurationInSeconds = newTrack.DurationInSeconds,
+                ArtistName = artistProfile.Name, 
+                AlbumCoverImageUrl = album.CoverImageUrl
+            };
+    
+            return StatusCode(201, trackDto);
+        }
     }
 }
