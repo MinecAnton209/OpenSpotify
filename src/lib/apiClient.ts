@@ -2,6 +2,18 @@
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5055';
 
+export class ApiError extends Error {
+    status: number;
+    data: any;
+
+    constructor(message: string, status: number, data: any) {
+        super(message);
+        this.name = 'ApiError';
+        this.status = status;
+        this.data = data;
+    }
+}
+
 const apiClient = {
     get: async <T>(endpoint: string): Promise<T> => {
         return request<T>(endpoint, 'GET');
@@ -22,7 +34,7 @@ async function request<T>(endpoint: string, method: string, body?: any): Promise
     const isFormData = body instanceof FormData;
 
     const headers: HeadersInit = {
-        // 'Content-Type': 'application/json',
+        // ч'Content-Type': 'application/json',
         ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
 
     };
@@ -45,11 +57,16 @@ async function request<T>(endpoint: string, method: string, body?: any): Promise
         }
 
         if (!response.ok) {
-            if (response.status === 401) {
-                logout();
-                window.location.href = '/login';
+            let errorData = null;
+            try {
+                errorData = await response.json();
+            } catch (e) {
             }
-            throw new Error(`API Error: ${response.statusText}`);
+            throw new ApiError(
+                `API Error: ${response.statusText}`,
+                response.status,
+                errorData
+            );
         }
 
         return response.json() as Promise<T>;
