@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import Link from "next/link";
 import Skeleton from "@/components/ui/Skeleton";
 import {CardGridSkeleton} from "@/components/CardSkeleton";
+import { resolveImageUrl } from '@/lib/utils';
 
 interface Album {
     id: number;
@@ -79,7 +80,7 @@ export default function ArtistDetailPage() {
         <div>
             <div className="flex items-end gap-6 mb-8">
                 <img
-                    src={artist.profileImageUrl || 'https://placehold.co/150'}
+                    src={resolveImageUrl(artist.profileImageUrl)}
                     alt={artist.name}
                     className="w-48 h-48 object-cover rounded-full shadow-lg"
                 />
@@ -97,7 +98,7 @@ export default function ArtistDetailPage() {
                         <Link href={`/albums/${album.id}`} key={album.id}>
                         <div className="bg-gray-800 p-4 rounded-lg shadow-lg hover:bg-gray-700 transition-colors cursor-pointer h-full">
                                 <img
-                                    src={album.coverImageUrl || 'https://placehold.co/150'}
+                                    src={resolveImageUrl(album.coverImageUrl)}
                                     alt={album.title}
                                     className="w-full h-auto object-cover rounded-md mb-4 aspect-square"
                                 />

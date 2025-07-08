@@ -7,6 +7,7 @@ import Skeleton from '@/components/ui/Skeleton';
 import Modal from '@/components/Modal';
 import Link from 'next/link';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { resolveImageUrl } from '@/lib/utils';
 
 interface ArtistProfile {
     name: string;
@@ -213,7 +214,7 @@ export default function ArtistDashboard() {
                                     <span className="sr-only">Manage album {album.title}</span>
                                 </Link>
                                 <div className="p-2 bg-gray-800 group-hover:bg-gray-700 transition-colors">
-                                    <img src={album.coverImageUrl ? `http://localhost:5055${album.coverImageUrl}` : 'https://placehold.co/150'} alt={album.title} className="w-full aspect-square mb-2 rounded-md"/>
+                                    <img src={resolveImageUrl(album.coverImageUrl)} alt={album.title} className="w-full aspect-square mb-2 rounded-md"/>
                                     <p className="font-semibold truncate">{album.title}</p>
                                 </div>
                                 <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">

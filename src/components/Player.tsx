@@ -3,6 +3,7 @@
 import { usePlayerStore } from "@/stores/playerStore";
 import { PlayCircleIcon, PauseCircleIcon, ForwardIcon, BackwardIcon } from '@heroicons/react/24/solid';
 import Link from 'next/link';
+import { resolveImageUrl } from '@/lib/utils';
 
 const Player = () => {
     const { currentTrack, isPlaying, togglePlayPause, playNext, playPrevious } = usePlayerStore();
@@ -27,7 +28,7 @@ const Player = () => {
         <footer className="bg-zinc-900 border-t border-gray-800 text-white p-3 grid grid-cols-3">
             <div className="flex items-center gap-3">
                 <img
-                    src={currentTrack.coverImageUrl || 'https://placehold.co/64'}
+                    src={resolveImageUrl(currentTrack.coverImageUrl)}
                     alt={currentTrack.title}
                     className="w-16 h-16 rounded-md"
                 />

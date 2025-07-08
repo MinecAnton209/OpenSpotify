@@ -9,6 +9,7 @@ import { useSidebarStore } from '@/stores/sidebarStore';
 import { TrashIcon, ClockIcon, HashtagIcon, MusicalNoteIcon } from '@heroicons/react/24/outline';
 import TrackContextMenu from '@/components/TrackContextMenu';
 import toast from 'react-hot-toast';
+import {resolveImageUrl} from "@/lib/utils";
 
 interface Track {
     id: string;
@@ -182,7 +183,7 @@ export default function PlaylistDetailPage() {
                                         {index + 1}
                                     </div>
                                     <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleTrackClick(track)}>
-                                        <img src={track.albumCoverImageUrl || 'https://placehold.co/40'} alt="album cover" className="w-10 h-10 rounded-sm"/>
+                                        <img src={resolveImageUrl(track.albumCoverImageUrl)} alt="album cover" className="w-10 h-10 rounded-sm"/>
                                         <div>
                                             <p className="font-semibold text-white">{track.title}</p>
                                             <p className="text-sm text-gray-400">{track.artistName}</p>
