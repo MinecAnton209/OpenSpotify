@@ -156,5 +156,47 @@ namespace OpenSpotify.API.Controllers
     
             return StatusCode(201, trackDto);
         }
+        [HttpPut("tracks/{trackId}")]
+        public async Task<IActionResult> UpdateTrack(Guid trackId, CreateTrackDto dto)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    
+            var track = await _context.Tracks
+                .Include(t => t.Album)
+                .ThenInclude(a => a.Artist)
+                .FirstOrDefaultAsync(t => t.Id == trackId && t.Album.Artist.UserId == userId);
+
+            if (track == null)
+            {
+                return NotFound(new { message = "Track not found or you don't have access to it." });
+            }
+    
+            track.Title = dto.Title;
+            track.DurationInSeconds = dto.DurationInSeconds;
+    
+            await _context.SaveChangesAsync();
+    
+            return NoContent();
+        }
+        [HttpDelete("tracks/{trackId}")]
+        public async Task<IActionResult> DeleteTrack(Guid trackId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var track = await _context.Tracks
+                .Include(t => t.Album)
+                .ThenInclude(a => a.Artist)
+                .FirstOrDefaultAsync(t => t.Id == trackId && t.Album.Artist.UserId == userId);
+
+            if (track == null)
+            {
+                return NotFound(new { message = "Track not found or you don't have access to it." });
+            }
+
+            _context.Tracks.Remove(track);
+            await _context.SaveChangesAsync();
+    
+            return NoContent();
+        }
     }
 }
