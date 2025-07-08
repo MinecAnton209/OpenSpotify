@@ -1,51 +1,85 @@
-﻿using OpenSpotify.API.Services;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Http;
+using System;
+using System.IO;
+using System.Threading.Tasks;
 
-public class LocalStorageService : IFileStorageService
+namespace OpenSpotify.API.Services
 {
-    private readonly string _basePath;
-    private readonly string _baseUrl;
-
-    public LocalStorageService(IConfiguration config)
+    public class LocalStorageService : IFileStorageService
     {
-        _basePath = config.GetValue<string>("Storage:Local:BasePath") ?? "wwwroot/uploads";
-        _baseUrl = config.GetValue<string>("Storage:Local:BaseUrl") ?? "/uploads";
-    }
+        private readonly string _basePath;
+        private readonly string _baseUrl;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public async Task<string> SaveFileAsync(Stream fileStream, string fileName, string contentType)
-    {
-        var uniqueFileName = $"{Guid.NewGuid()}{Path.GetExtension(fileName)}";
-        var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), _basePath);
-
-        if (!Directory.Exists(directoryPath))
+        public LocalStorageService(IConfiguration config, IHttpContextAccessor httpContextAccessor)
         {
-            Directory.CreateDirectory(directoryPath);
+            _basePath = config.GetValue<string>("Storage:Local:BasePath") ?? "wwwroot/uploads";
+            _baseUrl = config.GetValue<string>("Storage:Local:BaseUrl") ?? "/uploads";
+            _httpContextAccessor = httpContextAccessor;
         }
 
-        var filePath = Path.Combine(directoryPath, uniqueFileName);
-
-        await using (var stream = new FileStream(filePath, FileMode.Create))
+        public async Task<string> SaveFileAsync(Stream fileStream, string fileName, string contentType)
         {
-            await fileStream.CopyToAsync(stream);
+            var uniqueFileName = $"{Guid.NewGuid()}{Path.GetExtension(fileName)}";
+            
+            var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), _basePath);
+
+            if (!Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+
+            var filePath = Path.Combine(directoryPath, uniqueFileName);
+
+            await using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await fileStream.CopyToAsync(stream);
+            }
+
+            var relativeUrl = $"{_baseUrl}/{uniqueFileName}";
+
+            return GetFileUrl(relativeUrl);
         }
 
-        return $"{_baseUrl}/{uniqueFileName}";
-    }
-
-    public string GetFileUrl(string filePath)
-    {
-        return filePath;
-    }
-
-    public Task DeleteFileAsync(string filePath)
-    {
-        var fileName = Path.GetFileName(filePath);
-        var fullPath = Path.Combine(Directory.GetCurrentDirectory(), _basePath, fileName);
-
-        if (File.Exists(fullPath))
+        public string GetFileUrl(string filePath)
         {
-            File.Delete(fullPath);
+            var request = _httpContextAccessor.HttpContext?.Request;
+            if (request == null)
+            {
+                return filePath;
+            }
+            
+            var absoluteUrl = $"{request.Scheme}://{request.Host}{filePath}";
+            return absoluteUrl;
         }
-        
-        return Task.CompletedTask;
+
+        public Task DeleteFileAsync(string fileUrl)
+        {
+            if (string.IsNullOrEmpty(fileUrl) || !Uri.TryCreate(fileUrl, UriKind.Absolute, out var uri))
+            {
+                return Task.CompletedTask;
+            }
+            
+            var relativePath = uri.AbsolutePath;
+            
+            var pathSegment = relativePath.TrimStart('/');
+
+            var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", pathSegment);
+            
+            if (File.Exists(fullPath))
+            {
+                try
+                {
+                    File.Delete(fullPath);
+                }
+                catch (IOException ex)
+                {
+                    Console.WriteLine($"Error deleting file {fullPath}: {ex.Message}");
+                }
+            }
+            
+            return Task.CompletedTask;
+        }
     }
 }

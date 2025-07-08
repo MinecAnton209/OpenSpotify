@@ -69,7 +69,7 @@ switch (storageProvider?.ToLower())
                 .WithSSL(config.GetValue<bool>("Storage:Minio:UseSsl"))
                 .Build();
         });
-        // builder.Services.AddScoped<IFileStorageService, MinioStorageService>();
+        builder.Services.AddScoped<IFileStorageService, MinioStorageService>();
         break;
     
     default:
@@ -78,6 +78,7 @@ switch (storageProvider?.ToLower())
 }
 
 builder.Services.AddControllers();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddAuthorization();
 
 builder.Services.AddCors(options =>
@@ -95,6 +96,17 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+if (app.Configuration.GetValue<string>("Storage:Provider")?.ToLower() == "minio")
+{
+    using var scope = app.Services.CreateScope();
+    var minioService = scope.ServiceProvider.GetRequiredService<IFileStorageService>() as MinioStorageService;
+    if (minioService != null)
+    {
+        await minioService.EnsureBucketExistsAsync();
+        Console.WriteLine("MinIO bucket checked/created.");
+    }
+}
 
 if (app.Environment.IsDevelopment())
 {
