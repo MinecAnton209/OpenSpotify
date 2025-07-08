@@ -169,7 +169,7 @@ export default function ArtistDashboard() {
                 {albums.length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
                         {albums.map(album => (
-                            <Link href={`/albums/${album.id}`} key={album.id} title={album.title}>
+                            <Link href={`/dashboard/albums/${album.id}`} key={album.id} title={album.title}>
                                 <div className="p-2 hover:bg-gray-700 rounded-md transition-colors">
                                     <img src={album.coverImageUrl || 'https://placehold.co/150'} alt={album.title} className="w-full aspect-square mb-2 rounded-md"/>
                                     <p className="font-semibold truncate">{album.title}</p>
