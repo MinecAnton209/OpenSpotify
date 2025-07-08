@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef, Fragment } from 'react';
 import apiClient from '@/lib/apiClient';
 import toast from 'react-hot-toast';
 import Skeleton from '@/components/ui/Skeleton';
@@ -28,11 +28,11 @@ export default function ArtistDashboard() {
     const [isAlbumModalOpen, setIsAlbumModalOpen] = useState(false);
     const [editingAlbum, setEditingAlbum] = useState<Album | null>(null);
     const [newAlbumTitle, setNewAlbumTitle] = useState('');
-    const [newAlbumCoverUrl, setNewAlbumCoverUrl] = useState('');
+    const [newAlbumCoverFile, setNewAlbumCoverFile] = useState<File | null>(null);
     const [isSubmittingAlbum, setIsSubmittingAlbum] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const fetchData = useCallback(async () => {
-        setIsLoading(true);
         try {
             const [profileData, albumsData] = await Promise.all([
                 apiClient.get<ArtistProfile>('/api/artist-panel/profile'),
@@ -69,7 +69,10 @@ export default function ArtistDashboard() {
         setIsAlbumModalOpen(false);
         setEditingAlbum(null);
         setNewAlbumTitle('');
-        setNewAlbumCoverUrl('');
+        setNewAlbumCoverFile(null);
+        if(fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
     };
 
     const handleCreateAlbumClick = () => {
@@ -80,7 +83,7 @@ export default function ArtistDashboard() {
     const handleEditAlbumClick = (album: Album) => {
         setEditingAlbum(album);
         setNewAlbumTitle(album.title);
-        setNewAlbumCoverUrl(album.coverImageUrl || '');
+        setNewAlbumCoverFile(null);
         setIsAlbumModalOpen(true);
     };
 
@@ -90,14 +93,24 @@ export default function ArtistDashboard() {
             toast.error("Album title is required.");
             return;
         }
+
         setIsSubmittingAlbum(true);
         try {
-            const albumData = { title: newAlbumTitle, coverImageUrl: newAlbumCoverUrl };
             if (editingAlbum) {
-                await apiClient.put(`/api/artist-panel/albums/${editingAlbum.id}`, albumData);
+                await apiClient.put(`/api/artist-panel/albums/${editingAlbum.id}`, { title: newAlbumTitle, coverImageUrl: editingAlbum.coverImageUrl });
+                if (newAlbumCoverFile) {
+                    const formData = new FormData();
+                    formData.append('file', newAlbumCoverFile);
+                    await apiClient.post(`/api/artist-panel/albums/${editingAlbum.id}/cover`, formData);
+                }
                 toast.success("Album updated successfully!");
             } else {
-                await apiClient.post('/api/artist-panel/albums', albumData);
+                const newAlbum = await apiClient.post<Album>('/api/artist-panel/albums', { title: newAlbumTitle, coverImageUrl: null });
+                if (newAlbumCoverFile) {
+                    const formData = new FormData();
+                    formData.append('file', newAlbumCoverFile);
+                    await apiClient.post(`/api/artist-panel/albums/${newAlbum.id}/cover`, formData);
+                }
                 toast.success(`Album "${newAlbumTitle}" created successfully!`);
             }
             handleCloseModal();
@@ -110,7 +123,7 @@ export default function ArtistDashboard() {
     };
 
     const handleDeleteAlbum = async (albumId: string, albumTitle: string) => {
-        if (!confirm(`Are you sure you want to delete the album "${albumTitle}"? All tracks within it will also be permanently deleted.`)) return;
+        if (!window.confirm(`Are you sure you want to delete the album "${albumTitle}"? All tracks within it will also be permanently deleted.`)) return;
         try {
             await apiClient.delete(`/api/artist-panel/albums/${albumId}`);
             toast.success("Album deleted successfully!");
@@ -120,51 +133,74 @@ export default function ArtistDashboard() {
         }
     };
 
-    if (isLoading) { /* ... скелетон ... */ }
-    if (!profile) return <p>Could not find your artist profile.</p>;
-
-    return (
-        <>
-            <form onSubmit={handleSaveProfile} className="bg-gray-800 p-6 rounded-lg space-y-4 mb-8">
-                <h2 className="text-xl font-bold mb-4">Your Profile</h2>
-                <div className="flex items-center gap-4">
-                    <img
-                        src={profile.profileImageUrl || 'https://placehold.co/100x100?text=No+Image'}
-                        alt="Profile"
-                        className="w-24 h-24 rounded-full object-cover"
-                    />
-                    <div className="flex-1">
-                        <label htmlFor="profileImageUrl" className="block text-sm font-medium mb-1">Profile Image URL</label>
-                        <input
-                            id="profileImageUrl"
-                            type="text"
-                            value={profile.profileImageUrl || ''}
-                            onChange={(e) => setProfile(prev => prev ? { ...prev, profileImageUrl: e.target.value } : null)}
-                            className="w-full bg-gray-700 p-2 rounded-md"
-                            placeholder="https://example.com/your-image.jpg"
-                        />
+    if (isLoading) {
+        return (
+            <div className="space-y-8">
+                <div className="bg-gray-800 p-6 rounded-lg space-y-4 animate-pulse">
+                    <Skeleton className="h-8 w-1/3" />
+                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <div className="flex justify-end">
+                        <Skeleton className="h-12 w-32 rounded-full" />
                     </div>
                 </div>
+                <div className="bg-gray-800 p-6 rounded-lg animate-pulse">
+                    <Skeleton className="h-8 w-1/4 mb-4" />
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                            <div key={i}><Skeleton className="w-full aspect-square rounded-md" /></div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!profile) {
+        return <p className="text-red-500">Could not find your artist profile. Please contact support.</p>;
+    }
+
+    return (
+        <Fragment>
+            <form onSubmit={handleSaveProfile} className="bg-gray-800 p-6 rounded-lg space-y-4 mb-8">
+                <h2 className="text-xl font-bold">Edit Your Profile ({profile.name})</h2>
                 <div>
-                    <label htmlFor="bio" className="block text-sm font-medium mb-1">Bio</label>
+                    <label htmlFor="bio" className="block text-sm font-medium mb-1">Your Bio</label>
                     <textarea
                         id="bio"
+                        rows={5}
+                        className="w-full bg-gray-700 p-2 rounded-md border border-gray-600 focus:ring-green-500 focus:border-green-500"
                         value={profile.bio || ''}
-                        onChange={(e) => setProfile(prev => prev ? { ...prev, bio: e.target.value } : null)}
-                        rows={4}
-                        className="w-full bg-gray-700 p-2 rounded-md"
-                        placeholder="Tell us about yourself..."
-                    ></textarea>
+                        onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                        placeholder="Tell your fans a little bit about yourself..."
+                    />
                 </div>
-                <button type="submit" disabled={isSaving} className="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-full font-bold disabled:opacity-50">
-                    {isSaving ? 'Saving...' : 'Save Profile'}
-                </button>
+                <div>
+                    <label htmlFor="imageUrl" className="block text-sm font-medium mb-1">Profile Image URL</label>
+                    <input
+                        id="imageUrl"
+                        type="text"
+                        className="w-full bg-gray-700 p-2 rounded-md border border-gray-600 focus:ring-green-500 focus:border-green-500"
+                        value={profile.profileImageUrl || ''}
+                        onChange={(e) => setProfile({ ...profile, profileImageUrl: e.target.value })}
+                        placeholder="https://example.com/your-image.jpg"
+                    />
+                </div>
+                <div className="text-right">
+                    <button type="submit" disabled={isSaving} className="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-full font-bold disabled:opacity-50 transition-colors">
+                        {isSaving ? 'Saving...' : 'Save Profile'}
+                    </button>
+                </div>
             </form>
 
             <div className="bg-gray-800 p-6 rounded-lg">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold">Your Albums</h2>
-                    <button type="button" onClick={handleCreateAlbumClick} className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full font-bold">
+                    <button
+                        type="button"
+                        onClick={handleCreateAlbumClick}
+                        className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-full font-bold transition-colors"
+                    >
                         Create New Album
                     </button>
                 </div>
@@ -176,12 +212,10 @@ export default function ArtistDashboard() {
                                 <Link href={`/dashboard/albums/${album.id}`} title={`Manage "${album.title}"`} className="absolute inset-0 z-10">
                                     <span className="sr-only">Manage album {album.title}</span>
                                 </Link>
-
                                 <div className="p-2 bg-gray-800 group-hover:bg-gray-700 transition-colors">
-                                    <img src={album.coverImageUrl || 'https://placehold.co/150'} alt={album.title} className="w-full aspect-square mb-2 rounded-md"/>
+                                    <img src={album.coverImageUrl ? `http://localhost:5055${album.coverImageUrl}` : 'https://placehold.co/150'} alt={album.title} className="w-full aspect-square mb-2 rounded-md"/>
                                     <p className="font-semibold truncate">{album.title}</p>
                                 </div>
-
                                 <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
                                     <button onClick={() => handleEditAlbumClick(album)} className="bg-gray-900/50 p-1.5 rounded-full hover:bg-gray-900" title="Edit Album">
                                         <PencilIcon className="w-4 h-4 text-white"/>
@@ -205,8 +239,26 @@ export default function ArtistDashboard() {
                         <input id="albumTitle" type="text" value={newAlbumTitle} onChange={(e) => setNewAlbumTitle(e.target.value)} className="w-full bg-gray-700 p-2 rounded-md" required autoFocus />
                     </div>
                     <div>
-                        <label htmlFor="albumCover" className="block text-sm font-medium mb-1">Cover Image URL</label>
-                        <input id="albumCover" type="text" value={newAlbumCoverUrl} onChange={(e) => setNewAlbumCoverUrl(e.target.value)} className="w-full bg-gray-700 p-2 rounded-md" />
+                        <label htmlFor="albumCoverFile" className="block text-sm font-medium mb-1">
+                            Cover Image {editingAlbum ? '(Leave blank to keep current)' : ''}
+                        </label>
+                        <input
+                            id="albumCoverFile"
+                            type="file"
+                            ref={fileInputRef}
+                            accept="image/jpeg, image/png, image/webp"
+                            onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                    if (e.target.files[0].size > 5 * 1024 * 1024) {
+                                        toast.error("File is too large! Maximum size is 5MB.");
+                                        e.target.value = "";
+                                    } else {
+                                        setNewAlbumCoverFile(e.target.files[0]);
+                                    }
+                                }
+                            }}
+                            className="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-600 file:text-white hover:file:bg-green-700 cursor-pointer"
+                        />
                     </div>
                     <div className="flex justify-end gap-4 pt-4">
                         <button type="button" onClick={handleCloseModal} className="text-gray-300 hover:text-white">Cancel</button>
@@ -216,6 +268,6 @@ export default function ArtistDashboard() {
                     </div>
                 </form>
             </Modal>
-        </>
+        </Fragment>
     );
 }

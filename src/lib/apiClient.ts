@@ -19,9 +19,12 @@ const apiClient = {
 
 async function request<T>(endpoint: string, method: string, body?: any): Promise<T> {
     const { token, logout } = useAuthStore.getState();
+    const isFormData = body instanceof FormData;
 
     const headers: HeadersInit = {
-        'Content-Type': 'application/json',
+        // 'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+
     };
 
     if (token) {
@@ -31,7 +34,7 @@ async function request<T>(endpoint: string, method: string, body?: any): Promise
     const config: RequestInit = {
         method: method,
         headers: headers,
-        body: body ? JSON.stringify(body) : undefined,
+        body: isFormData ? body : (body ? JSON.stringify(body) : undefined),
     };
 
     try {
