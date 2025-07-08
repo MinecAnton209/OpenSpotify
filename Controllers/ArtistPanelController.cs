@@ -265,5 +265,38 @@ namespace OpenSpotify.API.Controllers
 
             return Ok(new { url = fileUrl });
         }
+        [HttpPost("tracks/{trackId}/audio")]
+        [RequestSizeLimit(20 * 1024 * 1024)]
+        public async Task<IActionResult> UploadTrackAudio(Guid trackId, IFormFile file)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    
+            var track = await _context.Tracks
+                .Include(t => t.Album)
+                .ThenInclude(a => a.Artist)
+                .FirstOrDefaultAsync(t => t.Id == trackId && t.Album.Artist.UserId == userId);
+
+            if (track == null)
+            {
+                return NotFound(new { message = "Track not found or you don't have access to it." });
+            }
+
+            if (!string.IsNullOrEmpty(track.AudioUrl))
+            {
+                return Conflict(new { message = "An audio file has already been uploaded for this track and cannot be changed." });
+            }
+
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest("No audio file uploaded.");
+            }
+    
+            var fileUrl = await _fileStorage.SaveFileAsync(file.OpenReadStream(), file.FileName, file.ContentType);
+
+            track.AudioUrl = fileUrl;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { url = fileUrl });
+        }
     }
 }

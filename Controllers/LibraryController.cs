@@ -96,7 +96,8 @@ namespace OpenSpotify.API.Controllers
                     Title = t.Title,
                     DurationInSeconds = t.DurationInSeconds,
                     ArtistName = t.Album.Artist.Name,
-                    AlbumCoverImageUrl = t.Album.CoverImageUrl
+                    AlbumCoverImageUrl = t.Album.CoverImageUrl,
+                    AudioUrl = t.AudioUrl
                 })
                 .ToListAsync();
 
