@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using OpenSpotify.API.Data;
 using OpenSpotify.API.DTOs;
 using OpenSpotify.API.Entities;
+using OpenSpotify.API.Services;
 
 namespace OpenSpotify.API.Controllers
 {
@@ -14,10 +15,12 @@ namespace OpenSpotify.API.Controllers
     public class ArtistPanelController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IFileStorageService _fileStorage;
 
-        public ArtistPanelController(ApplicationDbContext context)
+        public ArtistPanelController(ApplicationDbContext context, IFileStorageService fileStorage)
         {
             _context = context;
+            _fileStorage = fileStorage;
         }
 
         [HttpGet("profile")]
@@ -235,6 +238,32 @@ namespace OpenSpotify.API.Controllers
             await _context.SaveChangesAsync();
     
             return NoContent();
+        }
+        [HttpPost("albums/{albumId}/cover")]
+        [RequestSizeLimit(5 * 1024 * 1024)]
+        public async Task<IActionResult> UploadAlbumCover(Guid albumId, IFormFile file)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var artistProfile = await _context.Artists.AsNoTracking().FirstOrDefaultAsync(a => a.UserId == userId);
+            if (artistProfile == null) return Forbid();
+
+            var album = await _context.Albums.FirstOrDefaultAsync(a => a.Id == albumId && a.ArtistId == artistProfile.Id);
+            if (album == null) return NotFound("Album not found.");
+
+            if (file == null || file.Length == 0)
+                return BadRequest("No file uploaded.");
+
+            if (!string.IsNullOrEmpty(album.CoverImageUrl))
+            {
+                await _fileStorage.DeleteFileAsync(album.CoverImageUrl);
+            }
+
+            var fileUrl = await _fileStorage.SaveFileAsync(file.OpenReadStream(), file.FileName, file.ContentType);
+
+            album.CoverImageUrl = fileUrl;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { url = fileUrl });
         }
     }
 }

@@ -49,3 +49,4 @@ appsettings.Development.json
 .idea/
 
 OpenSpotify.API.csproj.user
+/wwwroot/

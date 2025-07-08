@@ -7,6 +7,9 @@ using OpenSpotify.API.Data;
 using OpenSpotify.API.Entities;
 using OpenSpotify.API.Services;
 using System.IdentityModel.Tokens.Jwt;
+using Microsoft.Extensions.FileProviders;
+using Minio;
+using OpenSpotify.API.Services;
 
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
@@ -53,6 +56,27 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddScoped<IPasswordHasher<ApplicationUser>, Argon2PasswordHasher<ApplicationUser>>();
 builder.Services.AddScoped<TokenService>();
 
+var storageProvider = builder.Configuration.GetValue<string>("Storage:Provider");
+switch (storageProvider?.ToLower())
+{
+    case "minio":
+        builder.Services.AddSingleton<IMinioClient>(sp =>
+        {
+            var config = sp.GetRequiredService<IConfiguration>();
+            return new MinioClient()
+                .WithEndpoint(config.GetValue<string>("Storage:Minio:Endpoint"))
+                .WithCredentials(config.GetValue<string>("Storage:Minio:AccessKey"), config.GetValue<string>("Storage:Minio:SecretKey"))
+                .WithSSL(config.GetValue<bool>("Storage:Minio:UseSsl"))
+                .Build();
+        });
+        // builder.Services.AddScoped<IFileStorageService, MinioStorageService>();
+        break;
+    
+    default:
+        builder.Services.AddScoped<IFileStorageService, LocalStorageService>();
+        break;
+}
+
 builder.Services.AddControllers();
 builder.Services.AddAuthorization();
 
@@ -79,6 +103,16 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(builder.Environment.ContentRootPath, "wwwroot/uploads")),
+    
+    RequestPath = "/uploads"
+});
+
+app.UseRouting();
 
 app.UseCors();
 app.UseAuthentication();
