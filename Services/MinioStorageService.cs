@@ -80,5 +80,30 @@ namespace OpenSpotify.API.Services
 
             await _minioClient.RemoveObjectAsync(rmArgs);
         }
+        public async Task<(Stream, string)> GetFileStreamAsync(string fileUrl)
+        {
+            await EnsureBucketExistsAsync();
+        
+            var objectName = new Uri(fileUrl).AbsolutePath.Split('/').LastOrDefault();
+            if (string.IsNullOrEmpty(objectName))
+            {
+                throw new FileNotFoundException("Invalid file URL for MinIO object.");
+            }
+
+            var statArgs = new StatObjectArgs().WithBucket(_bucketName).WithObject(objectName);
+            var stat = await _minioClient.StatObjectAsync(statArgs);
+
+            var stream = new MemoryStream();
+        
+            var getObjectArgs = new GetObjectArgs()
+                .WithBucket(_bucketName)
+                .WithObject(objectName)
+                .WithCallbackStream(s => s.CopyTo(stream));
+            
+            await _minioClient.GetObjectAsync(getObjectArgs);
+            stream.Position = 0;
+
+            return (stream, stat.ContentType);
+        }
     }
 }

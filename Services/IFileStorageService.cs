@@ -7,5 +7,7 @@
         string GetFileUrl(string filePath);
         
         Task DeleteFileAsync(string filePath);
+        
+        Task<(Stream, string)> GetFileStreamAsync(string fileUrl);
     }
 }
