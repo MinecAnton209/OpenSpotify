@@ -26,6 +26,9 @@ interface PlayerState {
     playNext: () => void;
     playPrevious: () => void;
     clearPlayer: () => void;
+
+    volume: number;
+    setVolume: (volume: number) => void;
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
@@ -34,6 +37,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     isPlaying: false,
     duration: 0,
     currentTime: 0,
+    volume: 0.75,
+    setVolume: (volume) => set({ volume }),
 
     setDuration: (duration) => set({ duration }),
     setCurrentTime: (time) => set({ currentTime: time }),

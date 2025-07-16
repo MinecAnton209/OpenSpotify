@@ -1,13 +1,14 @@
 ﻿"use client";
 
 import { usePlayerStore } from "@/stores/playerStore";
-import { PlayCircleIcon, PauseCircleIcon, ForwardIcon, BackwardIcon } from '@heroicons/react/24/solid';
+import { PlayCircleIcon, PauseCircleIcon, ForwardIcon, BackwardIcon, SpeakerWaveIcon, SpeakerXMarkIcon } from '@heroicons/react/24/solid';
 
 const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
+
 
 const Player = () => {
     const {
@@ -25,6 +26,13 @@ const Player = () => {
         const time = parseFloat(e.target.value);
         seek(time);
     };
+
+    const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newVolume = parseFloat(e.target.value);
+        setVolume(newVolume);
+    };
+
+    const { volume, setVolume } = usePlayerStore();
 
     if (!currentTrack) {
         return (
@@ -84,6 +92,25 @@ const Player = () => {
                     />
                     <span className="text-xs text-gray-400">{formatTime(duration || 0)}</span>
                 </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2">
+                <button onClick={() => setVolume(volume > 0 ? 0 : 0.75)}>
+                    {volume === 0 ? (
+                        <SpeakerXMarkIcon className="w-6 h-6 text-gray-400 hover:text-white" />
+                    ) : (
+                        <SpeakerWaveIcon className="w-6 h-6 text-gray-400 hover:text-white" />
+                    )}
+                </button>
+                <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={volume}
+                    onChange={handleVolumeChange}
+                    className="w-24 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-white"
+                />
             </div>
 
             <div className="flex items-center justify-end">
