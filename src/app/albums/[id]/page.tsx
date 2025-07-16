@@ -67,6 +67,7 @@ export default function AlbumDetailPage() {
             artistName: album.artistName,
             coverImageUrl: album.coverImageUrl,
             audioUrl: t.audioUrl,
+            durationInSeconds: t.durationInSeconds,
         }));
 
         const currentTrackInfo = playbackQueue.find(t => t.id === track.id);

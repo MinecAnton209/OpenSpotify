@@ -2,12 +2,16 @@
 
 export type RepeatMode = 'none' | 'queue' | 'track';
 
+export type SortMode = 'default' | 'title' | 'duration';
+export type SortDirection = 'asc' | 'desc';
+
 export interface TrackInfo {
     id: string;
     title: string;
     artistName: string;
     coverImageUrl: string | null;
     audioUrl: string | null;
+    durationInSeconds: number;
 }
 
 interface PlayerState {
@@ -24,6 +28,9 @@ interface PlayerState {
     originalQueue: TrackInfo[];
     toggleShuffle: () => void;
 
+    sortBy: SortMode;
+    sortDirection: SortDirection;
+
     setTrack: (track: TrackInfo, playlist?: TrackInfo[]) => void;
     togglePlayPause: () => void;
     playNext: () => void;
@@ -33,6 +40,20 @@ interface PlayerState {
     setDuration: (duration: number) => void;
     setCurrentTime: (time: number) => void;
     clearPlayer: () => void;
+}
+
+function sortQueue(queue: TrackInfo[], sortBy: SortMode, sortDirection: SortDirection): TrackInfo[] {
+    const sorted = [...queue]; // Створюємо копію
+    sorted.sort((a, b) => {
+        let comparison = 0;
+        if (sortBy === 'title') {
+            comparison = a.title.localeCompare(b.title);
+        } else if (sortBy === 'duration') {
+            comparison = (a.durationInSeconds || 0) - (b.durationInSeconds || 0);
+        }
+        return sortDirection === 'asc' ? comparison : -comparison;
+    });
+    return sorted;
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
@@ -45,6 +66,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     repeatMode: 'none',
     isShuffled: false,
     originalQueue: [],
+    sortBy: 'default',
+    sortDirection: 'asc',
 
     /*setTrack: (track, playlist) => {
         const { isShuffled } = get();
@@ -70,27 +93,50 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
                 isPlaying: true,
                 currentTime: 0,
                 duration: 0,
+                isShuffled: false,
+                sortBy: 'default',
+                sortDirection: 'asc',
             });
         }
     },
 
+    setSortMode: (mode: SortMode) => {
+        const { originalQueue, sortDirection } = get();
+
+        const sortedQueue = mode === 'default'
+            ? originalQueue
+            : sortQueue(originalQueue, mode, sortDirection);
+
+        set({
+            sortBy: mode,
+            queue: sortedQueue,
+            isShuffled: false,
+        });
+    },
+
+    toggleSortDirection: () => {
+        const { queue, sortDirection } = get();
+        const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+        set({
+            sortDirection: newDirection,
+            queue: [...queue].reverse()
+        });
+    },
+
     toggleShuffle: () => {
-        const { isShuffled, queue, currentTrack } = get();
+        const { isShuffled, originalQueue, currentTrack, queue } = get();
         const newIsShuffled = !isShuffled;
 
         if (newIsShuffled) {
-            const newQueue = shuffleArray([...queue]);
+            const newQueue = shuffleArray([...queue]); // <-- ОГОЛОШУЄМО ЗМІННУ
             const currentIndex = newQueue.findIndex(t => t.id === currentTrack?.id);
             if (currentIndex > -1) {
                 const [current] = newQueue.splice(currentIndex, 1);
                 newQueue.unshift(current);
             }
-            set({ queue: newQueue, isShuffled: true });
+            set({ queue: newQueue, isShuffled: true, sortBy: 'default' });
         } else {
-            set(state => ({
-                queue: state.originalQueue,
-                isShuffled: false
-            }));
+            set({ queue: originalQueue, isShuffled: false });
         }
     },
 
