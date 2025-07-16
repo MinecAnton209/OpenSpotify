@@ -15,6 +15,7 @@ import {
 } from '@heroicons/react/24/solid';
 import AnimatedTime from './ui/AnimatedTime';
 import PlayQueuePanel from './PlayQueuePanel';
+import { Menu, Transition } from '@headlessui/react';
 
 const Player = () => {
     const {
@@ -31,13 +32,17 @@ const Player = () => {
         seek,
         setVolume,
         toggleRepeatMode,
-        toggleShuffle
+        toggleShuffle,
+        playbackRate,
+        setPlaybackRate
     } = usePlayerStore();
 
     const [isSeeking, setIsSeeking] = useState(false);
     const [localSeek, setLocalSeek] = useState(currentTime);
 
     const [isQueueOpen, setIsQueueOpen] = useState(false);
+
+    const availableRates = [0.75, 1, 1.25, 1.5, 2];
 
     useEffect(() => {
         if (!isSeeking) {
@@ -48,6 +53,13 @@ const Player = () => {
     const progressPercent = duration > 0 ? (localSeek / duration) * 100 : 0;
     const trackStyle = {
         background: `linear-gradient(to right, #1DB954 ${progressPercent}%, #4d4d4d ${progressPercent}%)`
+    };
+
+    const handleRateToggle = () => {
+        const rates = [1, 1.25, 1.5, 2, 0.75];
+        const currentIndex = rates.indexOf(playbackRate);
+        const nextIndex = (currentIndex + 1) % rates.length;
+        setPlaybackRate(rates[nextIndex]);
     };
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,6 +156,44 @@ const Player = () => {
                 </div>
 
                 <div className="flex items-center justify-end gap-4">
+                    <Menu as="div" className="relative">
+                        <Menu.Button
+                            className="text-sm font-semibold w-12 text-center text-gray-400 hover:text-white"
+                            title={`Playback speed: ${playbackRate}x`}
+                        >
+                            {playbackRate.toFixed(2)}x
+                        </Menu.Button>
+                        <Transition
+                            as={Fragment}
+                            enter="transition ease-out duration-100"
+                            enterFrom="transform opacity-0 scale-95"
+                            enterTo="transform opacity-100 scale-100"
+                            leave="transition ease-in duration-75"
+                            leaveFrom="transform opacity-100 scale-100"
+                            leaveTo="transform opacity-0 scale-95"
+                        >
+                            <Menu.Items className="absolute right-0 bottom-full mb-2 w-24 origin-bottom-right rounded-md bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-30">
+                                <div className="py-1">
+                                    {availableRates.map((rate) => (
+                                        <Menu.Item key={rate}>
+                                            {({ active }) => (
+                                                <button
+                                                    onClick={() => setPlaybackRate(rate)}
+                                                    className={`${
+                                                        active ? 'bg-gray-700' : ''
+                                                    } ${
+                                                        playbackRate === rate ? 'font-bold text-green-500' : 'text-white'
+                                                    } group flex w-full justify-center rounded-md px-2 py-2 text-sm`}
+                                                >
+                                                    {rate.toFixed(2)}x
+                                                </button>
+                                            )}
+                                        </Menu.Item>
+                                    ))}
+                                </div>
+                            </Menu.Items>
+                        </Transition>
+                    </Menu>
                     <button onClick={() => setIsQueueOpen(true)} title="Play Queue">
                         <QueueListIcon className="w-5 h-5 text-gray-400 hover:text-white" />
                     </button>

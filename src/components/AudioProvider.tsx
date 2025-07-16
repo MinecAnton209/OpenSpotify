@@ -15,6 +15,7 @@ export default function AudioProvider() {
         setDuration,
         repeatMode,
         seek,
+        playbackRate,
     } = usePlayerStore();
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5055';
@@ -88,6 +89,13 @@ export default function AudioProvider() {
             audio.volume = volume;
         }
     }, [volume]);
+
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (audio) {
+            audio.playbackRate = playbackRate;
+        }
+    }, [playbackRate]);
 
 
     return null;

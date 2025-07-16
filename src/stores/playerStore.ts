@@ -31,6 +31,9 @@ interface PlayerState {
     sortBy: SortMode;
     sortDirection: SortDirection;
 
+    playbackRate: number;
+    setPlaybackRate: (rate: number) => void;
+
     setTrack: (track: TrackInfo, playlist?: TrackInfo[]) => void;
     togglePlayPause: () => void;
     playNext: () => void;
@@ -68,6 +71,12 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     originalQueue: [],
     sortBy: 'default',
     sortDirection: 'asc',
+    playbackRate: 1,
+
+    setPlaybackRate: (rate) => {
+        const validRate = Math.max(0.5, Math.min(2, rate));
+        set({ playbackRate: validRate });
+    },
 
     /*setTrack: (track, playlist) => {
         const { isShuffled } = get();
