@@ -13,6 +13,8 @@ export default function AudioProvider() {
         playNext,
         setCurrentTime,
         setDuration,
+        repeatMode,
+        seek,
     } = usePlayerStore();
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5055';
@@ -58,6 +60,15 @@ export default function AudioProvider() {
         } else {
             audio.src = '';
         }
+
+        const handleEnded = () => {
+            if (usePlayerStore.getState().repeatMode === 'track') {
+                seek(0);
+                audio.play();
+            } else {
+                playNext();
+            }
+        };
     }, [currentTrack?.id, API_URL]);
 
     useEffect(() => {

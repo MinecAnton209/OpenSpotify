@@ -11,6 +11,9 @@ import {
     SpeakerXMarkIcon,
 } from '@heroicons/react/24/solid';
 import AnimatedTime from './ui/AnimatedTime';
+import { ArrowPathIcon } from '@heroicons/react/24/outline';
+import { ArrowPathRoundedSquareIcon } from '@heroicons/react/24/solid';
+import { ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 
 const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -25,11 +28,15 @@ const Player = () => {
         currentTime,
         duration,
         volume,
+        repeatMode,
+        isShuffled,
         togglePlayPause,
         playNext,
         playPrevious,
         seek,
         setVolume,
+        toggleRepeatMode,
+        toggleShuffle,
     } = usePlayerStore();
 
     const [isSeeking, setIsSeeking] = useState(false);
@@ -54,13 +61,15 @@ const Player = () => {
 
     if (!currentTrack) {
         return (
-            <footer className="bg-zinc-900 border-t border-gray-800 text-white p-3 grid grid-cols-3">
+            <footer className="bg-zinc-900 border-t border-gray-800 text-white p-3 grid grid-cols-3 h-24">
                 <div className="flex items-center"></div>
                 <div className="flex flex-col items-center justify-center">
                     <div className="flex items-center gap-4">
-                        <BackwardIcon className="w-8 h-8 text-gray-600" />
-                        <PlayCircleIcon className="w-12 h-12 text-gray-600" />
-                        <ForwardIcon className="w-8 h-8 text-gray-600" />
+                        <button className="text-gray-600" disabled><ArrowsRightLeftIcon className="w-5 h-5" /></button>
+                        <button className="text-gray-600" disabled><BackwardIcon className="w-8 h-8" /></button>
+                        <button className="text-gray-600" disabled><PlayCircleIcon className="w-12 h-12" /></button>
+                        <button className="text-gray-600" disabled><ForwardIcon className="w-8 h-8" /></button>
+                        <button className="text-gray-600" disabled><ArrowPathIcon className="w-5 h-5" /></button>
                     </div>
                     <div className="flex items-center gap-2 w-full max-w-md mt-2">
                         <span className="text-xs text-gray-600">0:00</span>
@@ -74,7 +83,7 @@ const Player = () => {
     }
 
     return (
-        <footer className="bg-zinc-900 border-t border-gray-800 text-white p-3 grid grid-cols-3">
+        <footer className="bg-zinc-900 border-t border-gray-800 text-white p-3 grid grid-cols-3 h-24">
             <div className="flex items-center gap-3">
                 <img
                     src={currentTrack.coverImageUrl || 'https://placehold.co/64'}
@@ -89,25 +98,36 @@ const Player = () => {
 
             <div className="flex flex-col items-center justify-center">
                 <div className="flex items-center gap-4">
-                    <BackwardIcon
-                        onClick={playPrevious}
-                        className="w-8 h-8 text-gray-400 hover:text-white cursor-pointer"
-                    />
+                    <button onClick={toggleShuffle} title="Shuffle">
+                        <ArrowsRightLeftIcon className={`w-5 h-5 ${isShuffled ? 'text-green-500' : 'text-gray-400'} hover:text-white transition-colors`} />
+                    </button>
+
+                    <button onClick={playPrevious} title="Previous">
+                        <BackwardIcon className="w-8 h-8 text-gray-400 hover:text-white" />
+                    </button>
+
                     {isPlaying ? (
-                        <PauseCircleIcon
-                            onClick={togglePlayPause}
-                            className="w-12 h-12 text-white hover:scale-105 cursor-pointer"
-                        />
+                        <button onClick={togglePlayPause} title="Pause">
+                            <PauseCircleIcon className="w-12 h-12 text-white hover:scale-105 transition-transform" />
+                        </button>
                     ) : (
-                        <PlayCircleIcon
-                            onClick={togglePlayPause}
-                            className="w-12 h-12 text-white hover:scale-105 cursor-pointer"
-                        />
+                        <button onClick={togglePlayPause} title="Play">
+                            <PlayCircleIcon className="w-12 h-12 text-white hover:scale-105 transition-transform" />
+                        </button>
                     )}
-                    <ForwardIcon
-                        onClick={playNext}
-                        className="w-8 h-8 text-gray-400 hover:text-white cursor-pointer"
-                    />
+
+                    <button onClick={playNext} title="Next">
+                        <ForwardIcon className="w-8 h-8 text-gray-400 hover:text-white" />
+                    </button>
+
+                    <button onClick={toggleRepeatMode} title={`Repeat: ${repeatMode}`}>
+                        <div className="relative">
+                            <ArrowPathIcon className={`w-5 h-5 ${repeatMode !== 'none' ? 'text-green-500' : 'text-gray-400'} hover:text-white transition-colors`} />
+                            {repeatMode === 'track' && (
+                                <span className="absolute -bottom-1 -right-1 w-2 h-2 bg-green-500 rounded-full"></span>
+                            )}
+                        </div>
+                    </button>
                 </div>
 
                 <div className="flex items-center gap-2 w-full max-w-md mt-2">
@@ -117,20 +137,12 @@ const Player = () => {
                         min="0"
                         max={isNaN(duration) ? 0 : duration}
                         value={localSeek}
-                        onMouseDown={(e: React.MouseEvent<HTMLInputElement>) => setIsSeeking(true)}
-                        onMouseUp={(e: React.MouseEvent<HTMLInputElement>) => {
+                        onMouseDown={() => setIsSeeking(true)}
+                        onMouseUp={() => {
                             setIsSeeking(false);
                             seek(localSeek);
                         }}
-                        onTouchStart={(e: React.TouchEvent<HTMLInputElement>) => setIsSeeking(true)}
-                        onTouchEnd={(e: React.TouchEvent<HTMLInputElement>) => {
-                            setIsSeeking(false);
-                            seek(localSeek);
-                        }}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                            const time = parseFloat(e.target.value);
-                            setLocalSeek(time);
-                        }}
+                        onChange={(e) => setLocalSeek(parseFloat(e.target.value))}
                         style={trackStyle}
                         className="w-full h-1 rounded-lg appearance-none cursor-pointer bg-transparent focus:outline-none"
                     />
@@ -139,7 +151,7 @@ const Player = () => {
             </div>
 
             <div className="flex items-center justify-end gap-2">
-                <button onClick={() => setVolume(volume > 0 ? 0 : 0.75)}>
+                <button onClick={() => setVolume(volume > 0 ? 0 : 0.75)} title="Mute/Unmute">
                     {volume === 0 ? (
                         <SpeakerXMarkIcon className="w-6 h-6 text-gray-400 hover:text-white" />
                     ) : (
@@ -154,9 +166,9 @@ const Player = () => {
                     value={volume}
                     onChange={handleVolumeChange}
                     style={{
-                        background: `linear-gradient(to right, #1DB954 ${volume * 100}%, #4d4d4d ${volume * 100}%)`,
+                        background: `linear-gradient(to right, #ffffff ${volume * 100}%, #4d4d4d ${volume * 100}%)`,
                     }}
-                    className="w-24 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-white"
+                    className="w-24 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
                 />
             </div>
         </footer>
