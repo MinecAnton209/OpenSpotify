@@ -13,6 +13,7 @@ interface Track {
     id: string;
     title: string;
     durationInSeconds: number;
+    audioUrl: string | null;
 }
 
 interface AlbumDetails {
@@ -65,16 +66,16 @@ export default function AlbumDetailPage() {
             title: t.title,
             artistName: album.artistName,
             coverImageUrl: album.coverImageUrl,
+            audioUrl: t.audioUrl,
         }));
 
-        const currentTrackInfo: TrackInfo = {
-            id: track.id,
-            title: track.title,
-            artistName: album.artistName,
-            coverImageUrl: album.coverImageUrl,
-        };
+        const currentTrackInfo = playbackQueue.find(t => t.id === track.id);
 
-        setTrack(currentTrackInfo, playbackQueue);
+        if (currentTrackInfo) {
+            console.log('[AlbumPage] Setting track in player store:', currentTrackInfo);
+
+            setTrack(currentTrackInfo, playbackQueue);
+        }
     };
 
     if (isLoading) return <div className="text-center mt-10">Loading album...</div>;

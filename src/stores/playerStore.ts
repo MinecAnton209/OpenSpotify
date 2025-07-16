@@ -5,12 +5,22 @@ export interface TrackInfo {
     title: string;
     artistName: string;
     coverImageUrl: string | null;
+    audioUrl: string | null;
 }
 
 interface PlayerState {
     currentTrack: TrackInfo | null;
     queue: TrackInfo[];
     isPlaying: boolean;
+
+    duration: number;
+    currentTime: number;
+
+    setDuration: (duration: number) => void;
+    setCurrentTime: (time: number) => void;
+
+    seek: (time: number) => void;
+
     setTrack: (track: TrackInfo, playlist?: TrackInfo[]) => void;
     togglePlayPause: () => void;
     playNext: () => void;
@@ -22,12 +32,22 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     currentTrack: null,
     queue: [],
     isPlaying: false,
+    duration: 0,
+    currentTime: 0,
+
+    setDuration: (duration) => set({ duration }),
+    setCurrentTime: (time) => set({ currentTime: time }),
+    seek: (time) => {
+        console.log(`Seeking to: ${time}`);
+    },
 
     setTrack: (track, playlist) => {
         set({
             currentTrack: track,
             queue: playlist || [track],
             isPlaying: true,
+            currentTime: 0,
+            duration: 0,
         });
     },
 

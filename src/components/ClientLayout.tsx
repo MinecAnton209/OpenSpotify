@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import Player from "./Player";
 import { Toaster } from 'react-hot-toast';
+import AudioProvider from "@/components/AudioProvider";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
     const { isAuthenticated } = useAuthStore();
@@ -20,6 +21,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
     return (
         <div className="flex h-screen flex-col">
+            <AudioProvider />
             <Toaster
                 position="bottom-center"
                 toastOptions={{

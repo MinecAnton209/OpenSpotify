@@ -17,6 +17,7 @@ interface Track {
     durationInSeconds: number;
     artistName: string;
     albumCoverImageUrl: string | null;
+    audioUrl: string | null;
 }
 
 interface PlaylistDetails {
@@ -125,14 +126,14 @@ export default function PlaylistDetailPage() {
             title: t.title,
             artistName: t.artistName,
             coverImageUrl: t.albumCoverImageUrl,
+            audioUrl: t.audioUrl,
         }));
-        const currentTrackInfo: TrackInfo = {
-            id: track.id,
-            title: track.title,
-            artistName: track.artistName,
-            coverImageUrl: track.albumCoverImageUrl,
-        };
-        setTrackInPlayer(currentTrackInfo, playbackQueue);
+        const currentTrackInfo = playbackQueue.find(t => t.id === track.id);
+        if (currentTrackInfo) {
+            console.log('[AlbumPage] Setting track in player store:', currentTrackInfo);
+
+            setTrackInPlayer(currentTrackInfo, playbackQueue);
+        }
     };
 
     if (isLoading) return <div className="text-center mt-10">Loading playlist...</div>;
