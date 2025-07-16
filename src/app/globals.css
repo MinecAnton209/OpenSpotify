@@ -31,3 +31,38 @@ body {
     @apply bg-[#121212] text-white;
   }
 }
+
+input[type=range].custom-slider {
+  -webkit-appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type=range].custom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 12px;
+  width: 12px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  border: none;
+  margin-top: -5px;
+  transition: transform 0.2s ease-in-out;
+}
+
+input[type=range].custom-slider:hover::-webkit-slider-thumb {
+  transform: scale(1.2);
+}
+
+input[type=range].custom-slider::-moz-range-thumb {
+  height: 12px;
+  width: 12px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  border: none;
+  transition: transform 0.2s ease-in-out;
+}
+
+input[type=range].custom-slider:hover::-moz-range-thumb {
+  transform: scale(1.2);
+}

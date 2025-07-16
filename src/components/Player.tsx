@@ -1,7 +1,16 @@
 ﻿"use client";
 
+import { useState, useEffect } from "react";
 import { usePlayerStore } from "@/stores/playerStore";
-import { PlayCircleIcon, PauseCircleIcon, ForwardIcon, BackwardIcon, SpeakerWaveIcon, SpeakerXMarkIcon } from '@heroicons/react/24/solid';
+import {
+    PlayCircleIcon,
+    PauseCircleIcon,
+    ForwardIcon,
+    BackwardIcon,
+    SpeakerWaveIcon,
+    SpeakerXMarkIcon,
+} from '@heroicons/react/24/solid';
+import AnimatedTime from './ui/AnimatedTime';
 
 const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -9,30 +18,39 @@ const formatTime = (seconds: number) => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
 
-
 const Player = () => {
     const {
         currentTrack,
         isPlaying,
         currentTime,
         duration,
+        volume,
         togglePlayPause,
         playNext,
         playPrevious,
-        seek
+        seek,
+        setVolume,
     } = usePlayerStore();
 
-    const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const time = parseFloat(e.target.value);
-        seek(time);
+    const [isSeeking, setIsSeeking] = useState(false);
+    const [localSeek, setLocalSeek] = useState(currentTime);
+
+    useEffect(() => {
+        if (!isSeeking) {
+            setLocalSeek(currentTime);
+        }
+    }, [currentTime, isSeeking]);
+
+    const progressPercent = duration > 0 ? (localSeek / duration) * 100 : 0;
+
+    const trackStyle = {
+        background: `linear-gradient(to right, #1DB954 ${progressPercent}%, #4d4d4d ${progressPercent}%)`
     };
 
-    const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleVolumeChange = (e) => {
         const newVolume = parseFloat(e.target.value);
         setVolume(newVolume);
     };
-
-    const { volume, setVolume } = usePlayerStore();
 
     if (!currentTrack) {
         return (
@@ -71,26 +89,52 @@ const Player = () => {
 
             <div className="flex flex-col items-center justify-center">
                 <div className="flex items-center gap-4">
-                    <BackwardIcon onClick={playPrevious} className="w-8 h-8 text-gray-400 hover:text-white cursor-pointer" />
+                    <BackwardIcon
+                        onClick={playPrevious}
+                        className="w-8 h-8 text-gray-400 hover:text-white cursor-pointer"
+                    />
                     {isPlaying ? (
-                        <PauseCircleIcon onClick={togglePlayPause} className="w-12 h-12 text-white hover:scale-105 cursor-pointer" />
+                        <PauseCircleIcon
+                            onClick={togglePlayPause}
+                            className="w-12 h-12 text-white hover:scale-105 cursor-pointer"
+                        />
                     ) : (
-                        <PlayCircleIcon onClick={togglePlayPause} className="w-12 h-12 text-white hover:scale-105 cursor-pointer" />
+                        <PlayCircleIcon
+                            onClick={togglePlayPause}
+                            className="w-12 h-12 text-white hover:scale-105 cursor-pointer"
+                        />
                     )}
-                    <ForwardIcon onClick={playNext} className="w-8 h-8 text-gray-400 hover:text-white cursor-pointer" />
+                    <ForwardIcon
+                        onClick={playNext}
+                        className="w-8 h-8 text-gray-400 hover:text-white cursor-pointer"
+                    />
                 </div>
 
                 <div className="flex items-center gap-2 w-full max-w-md mt-2">
-                    <span className="text-xs text-gray-400">{formatTime(currentTime)}</span>
+                    <AnimatedTime timeInSeconds={localSeek} />
                     <input
                         type="range"
                         min="0"
                         max={isNaN(duration) ? 0 : duration}
-                        value={currentTime}
-                        onChange={handleSeek}
-                        className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-green-500"
+                        value={localSeek}
+                        onMouseDown={(e: React.MouseEvent<HTMLInputElement>) => setIsSeeking(true)}
+                        onMouseUp={(e: React.MouseEvent<HTMLInputElement>) => {
+                            setIsSeeking(false);
+                            seek(localSeek);
+                        }}
+                        onTouchStart={(e: React.TouchEvent<HTMLInputElement>) => setIsSeeking(true)}
+                        onTouchEnd={(e: React.TouchEvent<HTMLInputElement>) => {
+                            setIsSeeking(false);
+                            seek(localSeek);
+                        }}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                            const time = parseFloat(e.target.value);
+                            setLocalSeek(time);
+                        }}
+                        style={trackStyle}
+                        className="w-full h-1 rounded-lg appearance-none cursor-pointer bg-transparent focus:outline-none"
                     />
-                    <span className="text-xs text-gray-400">{formatTime(duration || 0)}</span>
+                    <AnimatedTime timeInSeconds={duration || 0} />
                 </div>
             </div>
 
@@ -109,11 +153,11 @@ const Player = () => {
                     step="0.01"
                     value={volume}
                     onChange={handleVolumeChange}
+                    style={{
+                        background: `linear-gradient(to right, #1DB954 ${volume * 100}%, #4d4d4d ${volume * 100}%)`,
+                    }}
                     className="w-24 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-white"
                 />
-            </div>
-
-            <div className="flex items-center justify-end">
             </div>
         </footer>
     );

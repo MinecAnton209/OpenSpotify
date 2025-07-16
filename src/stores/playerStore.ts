@@ -12,23 +12,19 @@ interface PlayerState {
     currentTrack: TrackInfo | null;
     queue: TrackInfo[];
     isPlaying: boolean;
-
     duration: number;
     currentTime: number;
-
-    setDuration: (duration: number) => void;
-    setCurrentTime: (time: number) => void;
-
-    seek: (time: number) => void;
+    volume: number;
 
     setTrack: (track: TrackInfo, playlist?: TrackInfo[]) => void;
     togglePlayPause: () => void;
     playNext: () => void;
     playPrevious: () => void;
-    clearPlayer: () => void;
-
-    volume: number;
+    seek: (time: number) => void;
     setVolume: (volume: number) => void;
+    setDuration: (duration: number) => void;
+    setCurrentTime: (time: number) => void;
+    clearPlayer: () => void;
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
@@ -38,22 +34,19 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     duration: 0,
     currentTime: 0,
     volume: 0.75,
-    setVolume: (volume) => set({ volume }),
-
-    setDuration: (duration) => set({ duration }),
-    setCurrentTime: (time) => set({ currentTime: time }),
-    seek: (time) => {
-        console.log(`Seeking to: ${time}`);
-    },
 
     setTrack: (track, playlist) => {
-        set({
-            currentTrack: track,
-            queue: playlist || [track],
-            isPlaying: true,
-            currentTime: 0,
-            duration: 0,
-        });
+        if (get().currentTrack?.id === track.id) {
+            get().togglePlayPause();
+        } else {
+            set({
+                currentTrack: track,
+                queue: playlist || [track],
+                isPlaying: true,
+                currentTime: 0,
+                duration: 0,
+            });
+        }
     },
 
     togglePlayPause: () => {
@@ -67,10 +60,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         if (!currentTrack) return;
 
         const currentIndex = queue.findIndex(t => t.id === currentTrack.id);
-        if (currentIndex === -1 || currentIndex === queue.length - 1) {
+        if (currentIndex === -1 || currentIndex >= queue.length - 1) {
             set({ currentTrack: null, isPlaying: false, queue: [] });
         } else {
-            set({ currentTrack: queue[currentIndex + 1], isPlaying: true });
+            set({ currentTrack: queue[currentIndex + 1] });
         }
     },
 
@@ -80,10 +73,22 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
         const currentIndex = queue.findIndex(t => t.id === currentTrack.id);
         if (currentIndex > 0) {
-            set({ currentTrack: queue[currentIndex - 1], isPlaying: true });
+            set({ currentTrack: queue[currentIndex - 1] });
         }
     },
 
+    setVolume: (volume) => {
+        const newVolume = Math.max(0, Math.min(1, volume));
+        set({ volume: newVolume });
+    },
+
+    setDuration: (duration) => set({ duration }),
+
+    setCurrentTime: (time) => set({ currentTime: time }),
+
+    seek: (time) => {
+        set({ currentTime: time });
+    },
     clearPlayer: () => {
         set({ currentTrack: null, isPlaying: false, queue: [] });
     },

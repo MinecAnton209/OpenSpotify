@@ -24,6 +24,7 @@ export default function AudioProvider() {
         }
         const audio = audioRef.current;
 
+        console.log('[AudioProvider] Appending native audio player to the body for debugging.');
         const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
         const handleLoadedMetadata = () => setDuration(audio.duration);
         const handleEnded = () => playNext();

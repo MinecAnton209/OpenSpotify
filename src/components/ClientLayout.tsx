@@ -6,6 +6,7 @@ import Sidebar from "./Sidebar";
 import Player from "./Player";
 import { Toaster } from 'react-hot-toast';
 import AudioProvider from "@/components/AudioProvider";
+import PageTransition from './PageTransition';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
     // const { isAuthenticated } = useAuthStore();
@@ -33,7 +34,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             />
             <div className="flex flex-1 overflow-hidden">
                 <Sidebar />
-                <main className="flex-1 overflow-y-auto p-8">{children}</main>
+                <main className="flex-1 overflow-y-auto p-8">
+                    <PageTransition>
+                        {children}
+                    </PageTransition>
+                </main>
             </div>
             <Player />
         </div>
