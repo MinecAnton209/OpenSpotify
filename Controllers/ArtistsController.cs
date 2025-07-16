@@ -64,5 +64,34 @@ namespace OpenSpotify.API.Controllers
 
             return Ok(artist);
         }
+        [HttpGet]
+        public async Task<ActionResult<PaginatedResultDto<ArtistDto>>> GetArtists(
+            [FromQuery] int pageNumber = 1, 
+            [FromQuery] int pageSize = 10)
+        {
+            var totalCount = await _context.Artists.CountAsync();
+    
+            var artists = await _context.Artists
+                .OrderBy(a => a.Name)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize) 
+                .Select(a => new ArtistDto
+                {
+                    Id = a.Id,
+                    Name = a.Name,
+                    ProfileImageUrl = a.ProfileImageUrl,
+                    IsVerified = a.IsVerified
+                })
+                .ToListAsync();
+
+            var result = new PaginatedResultDto<ArtistDto>
+            {
+                Items = artists,
+                TotalCount = totalCount,
+                HasNextPage = (pageNumber * pageSize) < totalCount
+            };
+
+            return Ok(result);
+        }
     }
 }
