@@ -1,11 +1,10 @@
 "use client";
 
-import '@/lib/polyfills';
-import { useEffect, useState } from 'react';
-import { useAuthStore } from '@/stores/authStore';
+import { useEffect, useState, useCallback } from 'react';
 import apiClient from '@/lib/apiClient';
-import Link from 'next/link';
 import { CardGridSkeleton } from '@/components/CardSkeleton';
+import Link from 'next/link';
+import { useAuthStore } from '@/stores/authStore';
 
 interface Artist {
     id: string;
@@ -14,45 +13,64 @@ interface Artist {
     isVerified: boolean;
 }
 
+interface PaginatedArtists {
+    items: Artist[];
+    hasNextPage: boolean;
+    totalCount: number;
+}
+
 export default function HomePage() {
     const { isAuthenticated, user } = useAuthStore();
     const [artists, setArtists] = useState<Artist[]>([]);
+    const [page, setPage] = useState(1);
+    const [hasNextPage, setHasNextPage] = useState(true);
     const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [isAppending, setIsAppending] = useState(false);
 
-    useEffect(() => {
-        if (!isAuthenticated) {
-            setIsLoading(false);
-            return;
+    const fetchArtists = useCallback(async (pageNumber: number) => {
+        if (pageNumber === 1) {
+            setIsLoading(true);
+        } else {
+            setIsAppending(true);
         }
 
-        const fetchArtists = async () => {
-            try {
-                const data = await apiClient.get<Artist[]>('/api/artists');
-                console.log("Artists from API:", data);
-                setArtists(data);
-            } catch (err) {
-                setError('Failed to fetch artists.');
-                console.error(err);
-            } finally {
-                setIsLoading(false);
+        try {
+            const data = await apiClient.get<PaginatedArtists>(`/api/artists?pageNumber=${pageNumber}&pageSize=10`);
+
+            if (pageNumber === 1) {
+                setArtists(data.items);
+            } else {
+                setArtists(prevArtists => {
+                    const newArtists = data.items.filter(newItem => !prevArtists.some(prevItem => prevItem.id === newItem.id));
+                    return [...prevArtists, ...newArtists];
+                });
             }
-        };
 
-        fetchArtists();
-    }, [isAuthenticated]);
+            setHasNextPage(data.hasNextPage);
 
-    if (isLoading) {
-        return (
-            <div>
-                <h1 className="text-3xl font-bold mb-6">Welcome!</h1>
-                <h2 className="text-2xl font-bold mb-4">Featured Artists</h2>
-                <CardGridSkeleton count={5} isCircle={true} />
-            </div>
-        );
-    }
+        } catch (error) {
+            console.error("Failed to fetch artists", error);
+        } finally {
+            setIsLoading(false);
+            setIsAppending(false);
+        }
+    }, []);
 
-    if (!isAuthenticated) {
+    useEffect(() => {
+        if (isAuthenticated) {
+            fetchArtists(1);
+        } else {
+            setIsLoading(false);
+        }
+    }, [isAuthenticated, fetchArtists]);
+
+    const loadMoreArtists = () => {
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchArtists(nextPage);
+    };
+
+    if (!isAuthenticated && !isLoading) {
         return (
             <div>
                 <h1 className="text-3xl font-bold">Welcome to OpenSpotify!</h1>
@@ -61,8 +79,14 @@ export default function HomePage() {
         )
     }
 
-    if (error) {
-        return <div className="text-center text-red-500">{error}</div>;
+    if (isLoading) {
+        return (
+            <div>
+                <h1 className="text-3xl font-bold mb-6">Hello!</h1>
+                <h2 className="text-2xl font-bold mb-4">Featured Artists</h2>
+                <CardGridSkeleton count={10} isCircle={true} />
+            </div>
+        );
     }
 
     return (
@@ -91,6 +115,18 @@ export default function HomePage() {
                     </Link>
                 ))}
             </div>
+
+            {hasNextPage && (
+                <div className="text-center mt-8">
+                    <button
+                        onClick={loadMoreArtists}
+                        disabled={isAppending}
+                        className="bg-white text-black font-bold py-2 px-6 rounded-full hover:scale-105 transition-transform disabled:opacity-50"
+                    >
+                        {isAppending ? "Loading..." : "Load More"}
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

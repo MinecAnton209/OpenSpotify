@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useAuthStore } from "@/stores/authStore";
+// import { useAuthStore } from "@/stores/authStore";
 import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import Player from "./Player";
@@ -8,7 +8,7 @@ import { Toaster } from 'react-hot-toast';
 import AudioProvider from "@/components/AudioProvider";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
-    const { isAuthenticated } = useAuthStore();
+    // const { isAuthenticated } = useAuthStore();
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
