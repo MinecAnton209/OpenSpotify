@@ -16,6 +16,7 @@ import {
 import AnimatedTime from './ui/AnimatedTime';
 import PlayQueuePanel from './PlayQueuePanel';
 import { Menu, Transition } from '@headlessui/react';
+import {resolveImageUrl} from "@/lib/utils";
 
 const Player = () => {
     const {
@@ -95,7 +96,7 @@ const Player = () => {
             <footer className="bg-zinc-900 border-t border-gray-800 text-white p-3 grid grid-cols-3 h-24">
                 <div className="flex items-center gap-3">
                     <img
-                        src={currentTrack.coverImageUrl || 'https://placehold.co/64'}
+                        src={resolveImageUrl(currentTrack.coverImageUrl)}
                         alt={currentTrack.title}
                         className="w-16 h-16 rounded-md"
                     />

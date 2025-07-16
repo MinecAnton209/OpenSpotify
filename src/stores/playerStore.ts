@@ -34,6 +34,10 @@ interface PlayerState {
     playbackRate: number;
     setPlaybackRate: (rate: number) => void;
 
+    lightboxVideoUrl: string | null;
+    openLightbox: (videoUrl: string) => void;
+    closeLightbox: () => void;
+
     setTrack: (track: TrackInfo, playlist?: TrackInfo[]) => void;
     togglePlayPause: () => void;
     playNext: () => void;
@@ -72,6 +76,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     sortBy: 'default',
     sortDirection: 'asc',
     playbackRate: 1,
+    lightboxVideoUrl: null,
+
+    openLightbox: (videoUrl) => set({ lightboxVideoUrl: videoUrl }),
+    closeLightbox: () => set({ lightboxVideoUrl: null }),
 
     setPlaybackRate: (rate) => {
         const validRate = Math.max(0.5, Math.min(2, rate));

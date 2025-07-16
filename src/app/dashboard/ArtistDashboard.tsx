@@ -18,6 +18,7 @@ interface Album {
     id: string;
     title: string;
     coverImageUrl: string | null;
+    coverVideoUrl: string | null;
 }
 
 export default function ArtistDashboard() {
@@ -30,8 +31,10 @@ export default function ArtistDashboard() {
     const [editingAlbum, setEditingAlbum] = useState<Album | null>(null);
     const [newAlbumTitle, setNewAlbumTitle] = useState('');
     const [newAlbumCoverFile, setNewAlbumCoverFile] = useState<File | null>(null);
+    const [newAlbumCoverVideoFile, setNewAlbumCoverVideoFile] = useState<File | null>(null);
     const [isSubmittingAlbum, setIsSubmittingAlbum] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const imageFileInputRef = useRef<HTMLInputElement>(null);
+    const videoFileInputRef = useRef<HTMLInputElement>(null);
 
     const fetchData = useCallback(async () => {
         try {
@@ -49,6 +52,7 @@ export default function ArtistDashboard() {
     }, []);
 
     useEffect(() => {
+        setIsLoading(true);
         fetchData();
     }, [fetchData]);
 
@@ -71,9 +75,9 @@ export default function ArtistDashboard() {
         setEditingAlbum(null);
         setNewAlbumTitle('');
         setNewAlbumCoverFile(null);
-        if(fileInputRef.current) {
-            fileInputRef.current.value = "";
-        }
+        setNewAlbumCoverVideoFile(null);
+        if(imageFileInputRef.current) imageFileInputRef.current.value = "";
+        if(videoFileInputRef.current) videoFileInputRef.current.value = "";
     };
 
     const handleCreateAlbumClick = () => {
@@ -85,6 +89,7 @@ export default function ArtistDashboard() {
         setEditingAlbum(album);
         setNewAlbumTitle(album.title);
         setNewAlbumCoverFile(null);
+        setNewAlbumCoverVideoFile(null);
         setIsAlbumModalOpen(true);
     };
 
@@ -94,26 +99,32 @@ export default function ArtistDashboard() {
             toast.error("Album title is required.");
             return;
         }
-
         setIsSubmittingAlbum(true);
         try {
+            let targetAlbumId: string;
             if (editingAlbum) {
-                await apiClient.put(`/api/artist-panel/albums/${editingAlbum.id}`, { title: newAlbumTitle, coverImageUrl: editingAlbum.coverImageUrl });
-                if (newAlbumCoverFile) {
-                    const formData = new FormData();
-                    formData.append('file', newAlbumCoverFile);
-                    await apiClient.post(`/api/artist-panel/albums/${editingAlbum.id}/cover`, formData);
-                }
-                toast.success("Album updated successfully!");
+                targetAlbumId = editingAlbum.id;
+                await apiClient.put(`/api/artist-panel/albums/${targetAlbumId}`, { title: newAlbumTitle });
             } else {
-                const newAlbum = await apiClient.post<Album>('/api/artist-panel/albums', { title: newAlbumTitle, coverImageUrl: null });
-                if (newAlbumCoverFile) {
-                    const formData = new FormData();
-                    formData.append('file', newAlbumCoverFile);
-                    await apiClient.post(`/api/artist-panel/albums/${newAlbum.id}/cover`, formData);
-                }
-                toast.success(`Album "${newAlbumTitle}" created successfully!`);
+                const newAlbum = await apiClient.post<Album>('/api/artist-panel/albums', { title: newAlbumTitle });
+                targetAlbumId = newAlbum.id;
             }
+
+            const uploadPromises = [];
+            if (newAlbumCoverFile) {
+                const imageFormData = new FormData();
+                imageFormData.append('file', newAlbumCoverFile);
+                uploadPromises.push(apiClient.post(`/api/artist-panel/albums/${targetAlbumId}/cover`, imageFormData));
+            }
+            if (newAlbumCoverVideoFile) {
+                const videoFormData = new FormData();
+                videoFormData.append('file', newAlbumCoverVideoFile);
+                uploadPromises.push(apiClient.post(`/api/artist-panel/albums/${targetAlbumId}/cover-video`, videoFormData));
+            }
+
+            await Promise.all(uploadPromises);
+
+            toast.success(editingAlbum ? "Album updated!" : `Album "${newAlbumTitle}" created!`);
             handleCloseModal();
             fetchData();
         } catch (error) {
@@ -158,7 +169,7 @@ export default function ArtistDashboard() {
     }
 
     if (!profile) {
-        return <p className="text-red-500">Could not find your artist profile. Please contact support.</p>;
+        return <p className="text-red-500 text-center mt-10">Could not find your artist profile. Please contact support.</p>;
     }
 
     return (
@@ -246,19 +257,29 @@ export default function ArtistDashboard() {
                         <input
                             id="albumCoverFile"
                             type="file"
-                            ref={fileInputRef}
-                            accept="image/jpeg, image/png, image/webp"
+                            ref={imageFileInputRef}
+                            accept="image/*"
                             onChange={(e) => {
-                                if (e.target.files && e.target.files[0]) {
-                                    if (e.target.files[0].size > 5 * 1024 * 1024) {
-                                        toast.error("File is too large! Maximum size is 5MB.");
-                                        e.target.value = "";
-                                    } else {
-                                        setNewAlbumCoverFile(e.target.files[0]);
-                                    }
-                                }
+                                const file = e.target.files?.[0];
+                                if(file) file.size > 5 * 1024 * 1024 ? toast.error("Max 5MB") : setNewAlbumCoverFile(file);
                             }}
                             className="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-600 file:text-white hover:file:bg-green-700 cursor-pointer"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="albumCoverVideoFile" className="block text-sm font-medium mb-1">
+                            Cover Video (Optional) {editingAlbum ? '(Leave blank to keep current)' : ''}
+                        </label>
+                        <input
+                            id="albumCoverVideoFile"
+                            type="file"
+                            ref={videoFileInputRef}
+                            accept="video/*"
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if(file) file.size > 50 * 1024 * 1024 ? toast.error("Max 50MB") : setNewAlbumCoverVideoFile(file);
+                            }}
+                            className="w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
                         />
                     </div>
                     <div className="flex justify-end gap-4 pt-4">
