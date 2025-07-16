@@ -32,11 +32,15 @@ namespace OpenSpotify.API.Controllers
                     CoverImageUrl = a.CoverImageUrl,
                     ArtistId = a.Artist.Id,
                     ArtistName = a.Artist.Name,
+            
                     Tracks = a.Tracks.Select(t => new TrackDto
                     {
                         Id = t.Id,
                         Title = t.Title,
-                        DurationInSeconds = t.DurationInSeconds
+                        DurationInSeconds = t.DurationInSeconds,
+                        ArtistName = a.Artist.Name,
+                        AlbumCoverImageUrl = a.CoverImageUrl,
+                        AudioUrl = t.AudioUrl
                     }).ToList()
                 })
                 .FirstOrDefaultAsync();
