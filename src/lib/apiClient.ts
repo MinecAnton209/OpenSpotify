@@ -1,4 +1,5 @@
 ﻿import { useAuthStore } from "@/stores/authStore";
+import toast from 'react-hot-toast';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5055';
 
@@ -34,7 +35,6 @@ async function request<T>(endpoint: string, method: string, body?: any): Promise
     const isFormData = body instanceof FormData;
 
     const headers: HeadersInit = {
-        // ч'Content-Type': 'application/json',
         ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
 
     };
@@ -57,6 +57,14 @@ async function request<T>(endpoint: string, method: string, body?: any): Promise
         }
 
         if (!response.ok) {
+            if (response.status === 401) {
+                if (window.location.pathname !== '/login') {
+                    toast.error("Your session has expired. Please log in again.");
+                    logout();
+                    window.location.href = '/login';
+                }
+            }
+
             let errorData = null;
             try {
                 errorData = await response.json();
@@ -72,6 +80,9 @@ async function request<T>(endpoint: string, method: string, body?: any): Promise
         return response.json() as Promise<T>;
 
     } catch (error) {
+        if (error instanceof ApiError && error.status === 401) {
+            return Promise.reject(error);
+        }
         console.error("API request failed:", error);
         throw error;
     }

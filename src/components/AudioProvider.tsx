@@ -5,20 +5,11 @@ import { useEffect, useRef } from 'react';
 
 export default function AudioProvider() {
     const audioRef = useRef<HTMLAudioElement | null>(null);
-
-    const {
-        currentTrack,
-        isPlaying,
-        volume,
-        playNext,
-        setCurrentTime,
-        setDuration,
-        repeatMode,
-        seek,
-        playbackRate,
-    } = usePlayerStore();
-
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5055';
+
+    const { isPlaying, currentTrack, volume, playbackRate } = usePlayerStore();
+
+    const { setCurrentTime, setDuration, playNext, seek } = usePlayerStore.getState();
 
     useEffect(() => {
         if (!audioRef.current) {
@@ -27,7 +18,6 @@ export default function AudioProvider() {
         }
         const audio = audioRef.current;
 
-        console.log('[AudioProvider] Appending native audio player to the body for debugging.');
         const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
         const handleLoadedMetadata = () => setDuration(audio.duration);
         const handleEnded = () => playNext();
@@ -36,67 +26,53 @@ export default function AudioProvider() {
         audio.addEventListener('loadedmetadata', handleLoadedMetadata);
         audio.addEventListener('ended', handleEnded);
 
-        usePlayerStore.setState({
-            seek: (time) => { if (audio) audio.currentTime = time; }
-        });
+        usePlayerStore.setState({ seek });
 
         return () => {
             audio.removeEventListener('timeupdate', handleTimeUpdate);
             audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
             audio.removeEventListener('ended', handleEnded);
         };
-    }, [setCurrentTime, setDuration, playNext]);
-
+    }, [setCurrentTime, setDuration, playNext, seek]);
 
     useEffect(() => {
         const audio = audioRef.current;
         if (!audio) return;
 
-        if (currentTrack?.id && currentTrack.audioUrl) {
-            audio.src = `${API_URL}/api/tracks/${currentTrack.id}/stream`;
-            audio.load();
-            if (isPlaying) {
-                audio.play().catch(e => console.error("Audio play failed on track change:", e));
+        if (currentTrack?.audioUrl && !currentTrack.canvasVideoUrl) {
+            const newSrc = `${API_URL}/api/tracks/${currentTrack.id}/stream`;
+            if (audio.src !== newSrc) {
+                audio.src = newSrc;
+                audio.load();
             }
         } else {
-            audio.src = '';
+            audio.removeAttribute('src');
+            audio.load();
         }
-
-        const handleEnded = () => {
-            if (usePlayerStore.getState().repeatMode === 'track') {
-                seek(0);
-                audio.play();
-            } else {
-                playNext();
-            }
-        };
-    }, [currentTrack?.id, API_URL]);
+    }, [currentTrack?.id, currentTrack?.audioUrl, currentTrack?.canvasVideoUrl, API_URL]);
 
     useEffect(() => {
         const audio = audioRef.current;
         if (!audio) return;
 
-        if (isPlaying) {
-            audio.play().catch(e => console.error("Audio play failed on toggle:", e));
+        if (isPlaying && currentTrack?.audioUrl && !currentTrack.canvasVideoUrl) {
+            audio.play().catch(e => console.error("Play failed:", e.name, e.message));
         } else {
             audio.pause();
         }
-    }, [isPlaying]);
+    }, [isPlaying, currentTrack?.audioUrl, currentTrack?.canvasVideoUrl]);
 
     useEffect(() => {
-        const audio = audioRef.current;
-        if (audio) {
-            audio.volume = volume;
+        if (audioRef.current) {
+            audioRef.current.volume = volume;
         }
     }, [volume]);
 
     useEffect(() => {
-        const audio = audioRef.current;
-        if (audio) {
-            audio.playbackRate = playbackRate;
+        if (audioRef.current) {
+            audioRef.current.playbackRate = playbackRate;
         }
     }, [playbackRate]);
-
 
     return null;
 }

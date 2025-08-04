@@ -6,10 +6,11 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { usePlayerStore, TrackInfo } from '@/stores/playerStore';
 import { resolveImageUrl } from '@/lib/utils';
-import { ClockIcon, HashtagIcon, PlayCircleIcon } from '@heroicons/react/24/outline';
+import { ClockIcon, HashtagIcon, PlayCircleIcon, VideoCameraIcon } from '@heroicons/react/24/outline';
 import TrackContextMenu from '@/components/TrackContextMenu';
 import LikeButton from '@/components/LikeButton';
 import MediaCover from '@/components/MediaCover';
+import { useRouter } from 'next/navigation';
 
 interface Track {
     id: string;
@@ -20,6 +21,7 @@ interface Track {
     albumCoverImageUrl: string | null;
     albumName: string;
     albumId: string;
+    canvasVideoUrl: string | null;
 }
 interface AlbumDetails {
     id: string;
@@ -38,6 +40,7 @@ const formatDuration = (seconds: number) => {
 };
 
 export default function AlbumDetailPage() {
+    const router = useRouter();
     const params = useParams();
     const id = params.id as string;
     const [album, setAlbum] = useState<AlbumDetails | null>(null);
@@ -67,15 +70,17 @@ export default function AlbumDetailPage() {
         const playbackQueue: TrackInfo[] = album.tracks.map(t => ({
             id: t.id,
             title: t.title,
-            artistName: t.artistName,
-            coverImageUrl: t.albumCoverImageUrl,
+            artistName: album.artistName,
+            coverImageUrl: album.coverImageUrl,
             audioUrl: t.audioUrl,
             durationInSeconds: t.durationInSeconds,
-            canvasVideoUrl: null,
+            canvasVideoUrl: t.canvasVideoUrl,
         }));
         const currentTrackInfo = playbackQueue.find(t => t.id === track.id);
         if (currentTrackInfo) {
             setTrack(currentTrackInfo, playbackQueue);
+
+            router.push(`/watch?v=${currentTrackInfo.id}`);
         }
     };
 
@@ -126,6 +131,7 @@ export default function AlbumDetailPage() {
                                     <p className="font-semibold text-white">{track.title}</p>
                                     <p className="text-sm text-gray-400">{track.artistName}</p>
                                 </div>
+                                {track.canvasVideoUrl && <VideoCameraIcon className="w-4 h-4 text-gray-400 ml-2 shrink-0" />}
                             </div>
                             <div className="text-sm text-gray-400 truncate">
                                 <Link href={`/albums/${album.id}`} className="hover:underline">{album.title}</Link>

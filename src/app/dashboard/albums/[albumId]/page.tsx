@@ -6,7 +6,7 @@ import apiClient, { ApiError } from '@/lib/apiClient';
 import toast from 'react-hot-toast';
 import ArtistGuard from '@/components/auth/ArtistGuard';
 import Link from 'next/link';
-import { PencilIcon, TrashIcon, CheckIcon, XMarkIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, TrashIcon, CheckIcon, XMarkIcon, ArrowUpTrayIcon, VideoCameraIcon, MusicalNoteIcon } from '@heroicons/react/24/outline';
 
 interface Track {
     id: string;
@@ -46,6 +46,32 @@ export default function ManageAlbumPage() {
     const editTitleInputRef = useRef<HTMLInputElement>(null);
 
     const audioFileInputRef = useRef<HTMLInputElement>(null);
+    const canvasFileInputRef = useRef<HTMLInputElement>(null);
+
+
+    const triggerCanvasFileInput = (trackId: string) => {
+        if (canvasFileInputRef.current) {
+            canvasFileInputRef.current.dataset.trackId = trackId;
+            canvasFileInputRef.current.click();
+        }
+    };
+
+    const handleCanvasUpload = async (trackId: string, file: File) => {
+        if (file.size > 10 * 1024 * 1024) {
+            toast.error("Canvas video is too large! Maximum size is 10MB.");
+            return;
+        }
+        const toastId = toast.loading("Uploading canvas...");
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            await apiClient.post(`/api/artist-panel/tracks/${trackId}/canvas`, formData);
+            toast.success("Canvas uploaded successfully!", { id: toastId });
+            fetchAlbum();
+        } catch (error) {
+            toast.error("Failed to upload canvas.", { id: toastId });
+        }
+    };
 
     const fetchAlbum = useCallback(async () => {
         if (!albumId) return;
@@ -176,29 +202,51 @@ export default function ManageAlbumPage() {
                     if(e.target) e.target.value = "";
                 }}
             />
+            <input
+                type="file"
+                ref={canvasFileInputRef}
+                className="hidden"
+                accept="video/mp4, video/webm"
+                onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    const trackId = e.target.dataset.trackId;
+                    if (file && trackId) {
+                        handleCanvasUpload(trackId, file);
+                    }
+                    if(e.target) e.target.value = "";
+                }}
+            />
+
             <div className="space-y-6">
                 <div>
-                    <Link href="/dashboard" className="text-sm text-gray-400 hover:underline">← Back to Dashboard</Link>
+                    <Link href="/dashboard" className="text-sm text-gray-400 hover:underline">
+                        ← Back to Dashboard
+                    </Link>
                     <h1 className="text-3xl font-bold mt-2">Manage Album: {album.title}</h1>
                     <p className="text-gray-400">by {album.artistName}</p>
                 </div>
 
-                <form onSubmit={handleAddTrack} className="bg-gray-800 p-4 rounded-lg flex flex-col sm:flex-row sm:items-end gap-4">
-                    <div className="flex-1">
-                        <label htmlFor="trackTitle" className="block text-sm font-medium mb-1">Track Title</label>
-                        <input id="trackTitle" type="text" value={newTrackTitle} onChange={e => setNewTrackTitle(e.target.value)} className="w-full bg-gray-700 p-2 rounded-md" required />
+                <form onSubmit={handleAddTrack} className="bg-gray-800 p-4 rounded-lg space-y-4">
+                    <h3 className="text-lg font-bold">Add New Track</h3>
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1">
+                            <label htmlFor="trackTitle" className="block text-sm font-medium mb-1">Track Title</label>
+                            <input id="trackTitle" type="text" value={newTrackTitle} onChange={e => setNewTrackTitle(e.target.value)} className="w-full bg-gray-700 p-2 rounded-md" required />
+                        </div>
+                        <div className="sm:w-32">
+                            <label htmlFor="trackDuration" className="block text-sm font-medium mb-1">Duration (sec)</label>
+                            <input id="trackDuration" type="number" value={newTrackDuration} onChange={e => setNewTrackDuration(e.target.value)} className="w-full bg-gray-700 p-2 rounded-md" required />
+                        </div>
                     </div>
-                    <div className="sm:w-32">
-                        <label htmlFor="trackDuration" className="block text-sm font-medium mb-1">Duration (sec)</label>
-                        <input id="trackDuration" type="number" value={newTrackDuration} onChange={e => setNewTrackDuration(e.target.value)} className="w-full bg-gray-700 p-2 rounded-md" required />
+                    <div className="text-right">
+                        <button type="submit" disabled={isAddingTrack} className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md font-bold disabled:opacity-50">
+                            {isAddingTrack ? 'Adding...' : 'Add Track'}
+                        </button>
                     </div>
-                    <button type="submit" disabled={isAddingTrack} className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md font-bold disabled:opacity-50 h-11 w-full sm:w-auto">
-                        {isAddingTrack ? 'Adding...' : 'Add Track'}
-                    </button>
                 </form>
 
                 <div>
-                    <h2 className="text-xl font-bold mb-2">Tracks ({album.tracks.length})</h2>
+                    <h2 className="text-xl font-bold mb-2">Tracks in this Album ({album.tracks.length})</h2>
                     <div className="bg-gray-800 p-4 rounded-lg">
                         <ul className="space-y-2">
                             {album.tracks.map((track, index) => (
@@ -218,18 +266,27 @@ export default function ManageAlbumPage() {
                                             </div>
                                             <div className="flex items-center gap-4">
                                                 <span className="text-gray-400">{formatDuration(track.durationInSeconds)}</span>
-                                                {track.audioUrl ? (
-                                                    <div className="w-8 h-8 flex items-center justify-center" title="Audio uploaded">
-                                                        <CheckIcon className="w-5 h-5 text-green-500" />
+
+                                                {track.audioUrl || track.canvasVideoUrl ? (
+                                                    <div className="w-8 h-8 flex items-center justify-center" title="Media uploaded">
+                                                        {track.audioUrl && <MusicalNoteIcon className="w-5 h-5 text-green-500" />}
+                                                        {track.canvasVideoUrl && <VideoCameraIcon className="w-5 h-5 text-green-500" />}
                                                     </div>
                                                 ) : (
-                                                    <button onClick={() => triggerAudioFileInput(track.id)} title="Upload audio file" className="p-1 w-8 h-8 flex items-center justify-center">
-                                                        <ArrowUpTrayIcon className="w-5 h-5 text-gray-400 hover:text-white" />
-                                                    </button>
+                                                    <div className="flex items-center gap-2">
+                                                        <button onClick={() => triggerAudioFileInput(track.id)} title="Upload audio file" className="p-1">
+                                                            <ArrowUpTrayIcon className="w-5 h-5 text-gray-400 hover:text-white" />
+                                                        </button>
+                                                        <button onClick={() => triggerCanvasFileInput(track.id)} title="Upload canvas video" className="p-1">
+                                                            <VideoCameraIcon className="w-5 h-5 text-gray-400 hover:text-white" />
+                                                        </button>
+                                                    </div>
                                                 )}
+
                                                 <button onClick={() => handleEditTrackClick(track)} title="Edit track" className="p-1">
                                                     <PencilIcon className="w-5 h-5 text-gray-400 hover:text-white" />
                                                 </button>
+
                                                 <button onClick={() => handleDeleteTrack(track.id, track.title)} title="Delete track" className="p-1">
                                                     <TrashIcon className="w-5 h-5 text-gray-400 hover:text-red-500" />
                                                 </button>

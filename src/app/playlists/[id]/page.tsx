@@ -10,6 +10,7 @@ import { TrashIcon, ClockIcon, HashtagIcon, MusicalNoteIcon } from '@heroicons/r
 import TrackContextMenu from '@/components/TrackContextMenu';
 import toast from 'react-hot-toast';
 import {resolveImageUrl} from "@/lib/utils";
+import { VideoCameraIcon } from '@heroicons/react/24/outline';
 
 interface Track {
     id: string;
@@ -18,6 +19,7 @@ interface Track {
     artistName: string;
     albumCoverImageUrl: string | null;
     audioUrl: string | null;
+    canvasVideoUrl: string | null;
 }
 
 interface PlaylistDetails {
@@ -120,19 +122,24 @@ export default function PlaylistDetailPage() {
     };
 
     const handleTrackClick = (track: Track) => {
-        if (!playlist) return;
+        if(!playlist) return;
         const playbackQueue: TrackInfo[] = playlist.tracks.map(t => ({
             id: t.id,
             title: t.title,
             artistName: t.artistName,
             coverImageUrl: t.albumCoverImageUrl,
             audioUrl: t.audioUrl,
+            durationInSeconds: t.durationInSeconds,
+            canvasVideoUrl: t.canvasVideoUrl,
         }));
-        const currentTrackInfo = playbackQueue.find(t => t.id === track.id);
-        if (currentTrackInfo) {
-            console.log('[AlbumPage] Setting track in player store:', currentTrackInfo);
 
+        const currentTrackInfo = playbackQueue.find(t => t.id === track.id);
+
+        if (currentTrackInfo) {
             setTrackInPlayer(currentTrackInfo, playbackQueue);
+            if (currentTrackInfo.canvasVideoUrl) {
+                router.push(`/watch?v=${currentTrackInfo.id}`);
+            }
         }
     };
 
@@ -189,6 +196,7 @@ export default function PlaylistDetailPage() {
                                             <p className="font-semibold text-white">{track.title}</p>
                                             <p className="text-sm text-gray-400">{track.artistName}</p>
                                         </div>
+                                        {track.canvasVideoUrl && <VideoCameraIcon className="w-4 h-4 text-gray-400 ml-2 shrink-0" />}
                                     </div>
                                     <p className="text-sm text-gray-400">Album Name Here</p>
                                     <span className="text-gray-400">{formatDuration(track.durationInSeconds)}</span>

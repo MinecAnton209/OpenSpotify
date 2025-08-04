@@ -12,6 +12,7 @@ export interface TrackInfo {
     coverImageUrl: string | null;
     audioUrl: string | null;
     durationInSeconds: number;
+    canvasVideoUrl: string | null;
 }
 
 interface PlayerState {
@@ -34,9 +35,14 @@ interface PlayerState {
     playbackRate: number;
     setPlaybackRate: (rate: number) => void;
 
+
     lightboxVideoUrl: string | null;
     openLightbox: (videoUrl: string) => void;
     closeLightbox: () => void;
+
+    canvasVideoUrl: string | null;
+    isUiVisible: boolean;
+    setIsUiVisible: (isVisible: boolean) => void;
 
     setTrack: (track: TrackInfo, playlist?: TrackInfo[]) => void;
     togglePlayPause: () => void;
@@ -50,7 +56,7 @@ interface PlayerState {
 }
 
 function sortQueue(queue: TrackInfo[], sortBy: SortMode, sortDirection: SortDirection): TrackInfo[] {
-    const sorted = [...queue]; // Створюємо копію
+    const sorted = [...queue];
     sorted.sort((a, b) => {
         let comparison = 0;
         if (sortBy === 'title') {
@@ -77,6 +83,9 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     sortDirection: 'asc',
     playbackRate: 1,
     lightboxVideoUrl: null,
+    isUiVisible: false,
+    setIsUiVisible: (isVisible) => set({ isUiVisible }),
+    canvasVideoUrl: null,
 
     openLightbox: (videoUrl) => set({ lightboxVideoUrl: videoUrl }),
     closeLightbox: () => set({ lightboxVideoUrl: null }),
@@ -145,7 +154,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         const newIsShuffled = !isShuffled;
 
         if (newIsShuffled) {
-            const newQueue = shuffleArray([...queue]); // <-- ОГОЛОШУЄМО ЗМІННУ
+            const newQueue = shuffleArray([...queue]);
             const currentIndex = newQueue.findIndex(t => t.id === currentTrack?.id);
             if (currentIndex > -1) {
                 const [current] = newQueue.splice(currentIndex, 1);
