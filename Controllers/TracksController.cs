@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OpenSpotify.API.Data;
+using OpenSpotify.API.DTOs;
 using OpenSpotify.API.Services;
 
 namespace OpenSpotify.API.Controllers
@@ -38,6 +39,33 @@ namespace OpenSpotify.API.Controllers
             {
                 return NotFound("Audio file not found in storage.");
             }
+        }
+        [HttpGet("{id}")]
+        public async Task<ActionResult<TrackDto>> GetTrack(Guid id)
+        {
+            var track = await _context.Tracks
+                .Where(t => t.Id == id)
+                .Include(t => t.Album).ThenInclude(a => a.Artist)
+                .Select(t => new TrackDto
+                {
+                    Id = t.Id,
+                    Title = t.Title,
+                    DurationInSeconds = t.DurationInSeconds,
+                    AudioUrl = t.AudioUrl,
+                    CanvasVideoUrl = t.CanvasVideoUrl,
+                    ArtistName = t.Album.Artist.Name,
+                    AlbumCoverImageUrl = t.Album.CoverImageUrl,
+                    AlbumName = t.Album.Title,
+                    AlbumId = t.Album.Id
+                })
+                .FirstOrDefaultAsync();
+
+            if (track == null)
+            {
+                return NotFound();
+            }
+    
+            return Ok(track);
         }
     }
 }

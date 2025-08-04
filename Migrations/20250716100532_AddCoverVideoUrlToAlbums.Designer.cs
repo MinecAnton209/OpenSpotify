@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using OpenSpotify.API.Data;
@@ -11,9 +12,11 @@ using OpenSpotify.API.Data;
 namespace OpenSpotify.API.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250716100532_AddCoverVideoUrlToAlbums")]
+    partial class AddCoverVideoUrlToAlbums
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -340,9 +343,6 @@ namespace OpenSpotify.API.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("AudioUrl")
-                        .HasColumnType("text");
-
-                    b.Property<string>("CanvasVideoUrl")
                         .HasColumnType("text");
 
                     b.Property<int>("DurationInSeconds")

@@ -7,6 +7,7 @@
         public int DurationInSeconds { get; set; }
         
         public string? AudioUrl { get; set; }
+        public string? CanvasVideoUrl { get; set; }
 
         public Guid AlbumId { get; set; }
         public Album Album { get; set; } = null!;

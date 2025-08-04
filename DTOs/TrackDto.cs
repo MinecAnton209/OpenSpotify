@@ -8,7 +8,10 @@
         
         public string ArtistName { get; set; } = null!;
         public string? AlbumCoverImageUrl { get; set; }
+        public string? CanvasVideoUrl { get; set; }
         
         public string? AudioUrl { get; set; }
+        public string? AlbumName { get; set; } 
+        public Guid AlbumId { get; set; }
     }
 }

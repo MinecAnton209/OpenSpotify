@@ -27,7 +27,7 @@ namespace OpenSpotify.API.Controllers
         public async Task<ActionResult<ArtistDetailDto>> GetMyArtistProfile()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            
+
             var artistProfile = await _context.Artists
                 .Where(a => a.UserId == userId)
                 .Select(a => new ArtistDetailDto
@@ -61,16 +61,17 @@ namespace OpenSpotify.API.Controllers
 
             artistProfile.Bio = dto.Bio;
             artistProfile.ProfileImageUrl = dto.ProfileImageUrl;
-            
+
             await _context.SaveChangesAsync();
-            
+
             return NoContent();
         }
+
         [HttpPost("albums")]
         public async Task<IActionResult> CreateAlbum(CreateAlbumDto dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    
+
             var artistProfile = await _context.Artists.FirstOrDefaultAsync(a => a.UserId == userId);
 
             if (artistProfile == null)
@@ -95,16 +96,17 @@ namespace OpenSpotify.API.Controllers
                 Title = newAlbum.Title,
                 CoverImageUrl = newAlbum.CoverImageUrl
             };
-    
+
             return CreatedAtAction(nameof(AlbumsController.GetAlbum), "Albums", new { id = newAlbum.Id }, albumDto);
         }
+
         [HttpGet("albums")]
         public async Task<ActionResult<IEnumerable<AlbumDto>>> GetMyAlbums()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var artistProfile = await _context.Artists.AsNoTracking()
                 .FirstOrDefaultAsync(a => a.UserId == userId);
-    
+
             if (artistProfile == null)
             {
                 return Forbid("Artist profile not found.");
@@ -119,19 +121,21 @@ namespace OpenSpotify.API.Controllers
                     CoverImageUrl = a.CoverImageUrl
                 })
                 .ToListAsync();
-        
+
             return Ok(albums);
         }
+
         [HttpPost("albums/{albumId}/tracks")]
         public async Task<IActionResult> AddTrackToAlbum(Guid albumId, CreateTrackDto dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    
+
             var artistProfile = await _context.Artists.AsNoTracking()
                 .FirstOrDefaultAsync(a => a.UserId == userId);
             if (artistProfile == null) return Forbid();
 
-            var album = await _context.Albums.FirstOrDefaultAsync(a => a.Id == albumId && a.ArtistId == artistProfile.Id);
+            var album =
+                await _context.Albums.FirstOrDefaultAsync(a => a.Id == albumId && a.ArtistId == artistProfile.Id);
             if (album == null)
             {
                 return NotFound(new { message = "Album not found or you don't have access to it." });
@@ -147,23 +151,24 @@ namespace OpenSpotify.API.Controllers
 
             await _context.Tracks.AddAsync(newTrack);
             await _context.SaveChangesAsync();
-    
+
             var trackDto = new TrackDto
             {
                 Id = newTrack.Id,
                 Title = newTrack.Title,
                 DurationInSeconds = newTrack.DurationInSeconds,
-                ArtistName = artistProfile.Name, 
+                ArtistName = artistProfile.Name,
                 AlbumCoverImageUrl = album.CoverImageUrl
             };
-    
+
             return StatusCode(201, trackDto);
         }
+
         [HttpPut("tracks/{trackId}")]
         public async Task<IActionResult> UpdateTrack(Guid trackId, CreateTrackDto dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    
+
             var track = await _context.Tracks
                 .Include(t => t.Album)
                 .ThenInclude(a => a.Artist)
@@ -173,14 +178,15 @@ namespace OpenSpotify.API.Controllers
             {
                 return NotFound(new { message = "Track not found or you don't have access to it." });
             }
-    
+
             track.Title = dto.Title;
             track.DurationInSeconds = dto.DurationInSeconds;
-    
+
             await _context.SaveChangesAsync();
-    
+
             return NoContent();
         }
+
         [HttpDelete("tracks/{trackId}")]
         public async Task<IActionResult> DeleteTrack(Guid trackId)
         {
@@ -198,9 +204,10 @@ namespace OpenSpotify.API.Controllers
 
             _context.Tracks.Remove(track);
             await _context.SaveChangesAsync();
-    
+
             return NoContent();
         }
+
         [HttpPut("albums/{albumId}")]
         public async Task<IActionResult> UpdateAlbum(Guid albumId, CreateAlbumDto dto)
         {
@@ -208,7 +215,8 @@ namespace OpenSpotify.API.Controllers
             var artistProfile = await _context.Artists.AsNoTracking().FirstOrDefaultAsync(a => a.UserId == userId);
             if (artistProfile == null) return Forbid();
 
-            var album = await _context.Albums.FirstOrDefaultAsync(a => a.Id == albumId && a.ArtistId == artistProfile.Id);
+            var album =
+                await _context.Albums.FirstOrDefaultAsync(a => a.Id == albumId && a.ArtistId == artistProfile.Id);
             if (album == null)
             {
                 return NotFound(new { message = "Album not found or you don't have access to it." });
@@ -216,11 +224,12 @@ namespace OpenSpotify.API.Controllers
 
             album.Title = dto.Title;
             album.CoverImageUrl = dto.CoverImageUrl;
-    
+
             await _context.SaveChangesAsync();
-    
+
             return NoContent();
         }
+
         [HttpDelete("albums/{albumId}")]
         public async Task<IActionResult> DeleteAlbum(Guid albumId)
         {
@@ -228,7 +237,8 @@ namespace OpenSpotify.API.Controllers
             var artistProfile = await _context.Artists.AsNoTracking().FirstOrDefaultAsync(a => a.UserId == userId);
             if (artistProfile == null) return Forbid();
 
-            var album = await _context.Albums.FirstOrDefaultAsync(a => a.Id == albumId && a.ArtistId == artistProfile.Id);
+            var album =
+                await _context.Albums.FirstOrDefaultAsync(a => a.Id == albumId && a.ArtistId == artistProfile.Id);
             if (album == null)
             {
                 return NotFound(new { message = "Album not found or you don't have access to it." });
@@ -236,9 +246,10 @@ namespace OpenSpotify.API.Controllers
 
             _context.Albums.Remove(album);
             await _context.SaveChangesAsync();
-    
+
             return NoContent();
         }
+
         [HttpPost("albums/{albumId}/cover")]
         [RequestSizeLimit(5 * 1024 * 1024)]
         public async Task<IActionResult> UploadAlbumCover(Guid albumId, IFormFile file)
@@ -247,7 +258,8 @@ namespace OpenSpotify.API.Controllers
             var artistProfile = await _context.Artists.AsNoTracking().FirstOrDefaultAsync(a => a.UserId == userId);
             if (artistProfile == null) return Forbid();
 
-            var album = await _context.Albums.FirstOrDefaultAsync(a => a.Id == albumId && a.ArtistId == artistProfile.Id);
+            var album =
+                await _context.Albums.FirstOrDefaultAsync(a => a.Id == albumId && a.ArtistId == artistProfile.Id);
             if (album == null) return NotFound("Album not found.");
 
             if (file == null || file.Length == 0)
@@ -265,35 +277,52 @@ namespace OpenSpotify.API.Controllers
 
             return Ok(new { url = fileUrl });
         }
+
         [HttpPost("tracks/{trackId}/audio")]
-        [RequestSizeLimit(20 * 1024 * 1024)]
         public async Task<IActionResult> UploadTrackAudio(Guid trackId, IFormFile file)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    
             var track = await _context.Tracks
-                .Include(t => t.Album)
-                .ThenInclude(a => a.Artist)
+                .Include(t => t.Album.Artist)
                 .FirstOrDefaultAsync(t => t.Id == trackId && t.Album.Artist.UserId == userId);
 
-            if (track == null)
+            if (track == null) return NotFound("Track not found.");
+
+            if (!string.IsNullOrEmpty(track.AudioUrl) || !string.IsNullOrEmpty(track.CanvasVideoUrl))
             {
-                return NotFound(new { message = "Track not found or you don't have access to it." });
+                return Conflict(new { message = "A media file (audio or video) has already been uploaded for this track and cannot be changed." });
             }
 
-            if (!string.IsNullOrEmpty(track.AudioUrl))
-            {
-                return Conflict(new { message = "An audio file has already been uploaded for this track and cannot be changed." });
-            }
+            if (file == null || file.Length == 0) return BadRequest("No audio file uploaded.");
 
-            if (file == null || file.Length == 0)
-            {
-                return BadRequest("No audio file uploaded.");
-            }
-    
             var fileUrl = await _fileStorage.SaveFileAsync(file.OpenReadStream(), file.FileName, file.ContentType);
 
             track.AudioUrl = fileUrl;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { url = fileUrl });
+        }
+
+        [HttpPost("tracks/{trackId}/canvas")]
+        public async Task<IActionResult> UploadTrackCanvas(Guid trackId, IFormFile file)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var track = await _context.Tracks
+                .Include(t => t.Album.Artist)
+                .FirstOrDefaultAsync(t => t.Id == trackId && t.Album.Artist.UserId == userId);
+
+            if (track == null) return NotFound("Track not found.");
+
+            if (!string.IsNullOrEmpty(track.AudioUrl) || !string.IsNullOrEmpty(track.CanvasVideoUrl))
+            {
+                return Conflict(new { message = "A media file (audio or video) has already been uploaded for this track and cannot be changed." });
+            }
+
+            if (file == null || file.Length == 0) return BadRequest("No video file uploaded.");
+
+            var fileUrl = await _fileStorage.SaveFileAsync(file.OpenReadStream(), file.FileName, file.ContentType);
+
+            track.CanvasVideoUrl = fileUrl;
             await _context.SaveChangesAsync();
 
             return Ok(new { url = fileUrl });

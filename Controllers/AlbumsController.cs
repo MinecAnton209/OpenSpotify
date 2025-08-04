@@ -30,6 +30,7 @@ namespace OpenSpotify.API.Controllers
                     Id = a.Id,
                     Title = a.Title,
                     CoverImageUrl = a.CoverImageUrl,
+                    CoverVideoUrl = a.CoverVideoUrl,
                     ArtistId = a.Artist.Id,
                     ArtistName = a.Artist.Name,
             
@@ -40,7 +41,8 @@ namespace OpenSpotify.API.Controllers
                         DurationInSeconds = t.DurationInSeconds,
                         ArtistName = a.Artist.Name,
                         AlbumCoverImageUrl = a.CoverImageUrl,
-                        AudioUrl = t.AudioUrl
+                        AudioUrl = t.AudioUrl,
+                        CanvasVideoUrl = t.CanvasVideoUrl,
                     }).ToList()
                 })
                 .FirstOrDefaultAsync();
